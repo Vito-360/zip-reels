@@ -1,0 +1,93 @@
+{
+ "date": "2026-10-06",
+ "slug": "they-search-what-you-do",
+ "style": "kinetic",
+ "pillar": "found",
+ "ending": "question",
+ "topic": "New customers do not search a business by name, they search the service. What a Google profile needs so you are the answer.",
+ "duration": 15,
+ "audio": {
+  "bpm": 120,
+  "mood": "bounce",
+  "seed": 8
+ },
+ "scenes": [
+  {
+   "type": "blurtype",
+   "tag": "hook",
+   "dur": 2.5,
+   "lines": [
+    "new customers",
+    "don't know",
+    "your name."
+   ],
+   "say": "New customers don't know your name."
+  },
+  {
+   "type": "chaos",
+   "tag": "search",
+   "dur": 3.5,
+   "seed": 11,
+   "main": [
+    "plumber",
+    "near",
+    "me"
+   ],
+   "ghosts": [
+    "open now",
+    "best pizza",
+    "hair salon",
+    "car service",
+    "dentist",
+    "saturday",
+    "near me",
+    "open late"
+   ],
+   "say": "They type what they need. Plumber near me."
+  },
+  {
+   "type": "blurtype",
+   "tag": "turn",
+   "dur": 2,
+   "turn": true,
+   "lines": [
+    "they search",
+    "what you do."
+   ],
+   "chrome": 1,
+   "say": "They search what you do."
+  },
+  {
+   "type": "stack",
+   "tag": "profile",
+   "dur": 3.5,
+   "kicker": "what your Google profile needs",
+   "items": [
+    "category",
+    "hours",
+    "photos",
+    "reviews",
+    "website"
+   ],
+   "say": "Tell Google your category, hours, photos, reviews and website."
+  },
+  {
+   "type": "slam",
+   "tag": "answer",
+   "dur": 1.5,
+   "lines": [
+    "be the",
+    "answer."
+   ],
+   "say": "Be the answer."
+  },
+  {
+   "type": "end",
+   "tag": "zip",
+   "dur": 2,
+   "tagline": "systems that sell.",
+   "question": "What would a stranger type to find you?"
+  }
+ ],
+ "caption": "A new customer has never heard of you. So they don't type your name. They type what they need: \"plumber near me\", \"hair salon open now\".\n\nGoogle can only show you for that search if your profile says what you do. Five things to fill in: the right category, real opening hours, photos of your work, reviews, and a link to your website.\n\nWhat would a stranger type to find you?"
+}

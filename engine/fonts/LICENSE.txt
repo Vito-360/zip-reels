@@ -1,0 +1,2 @@
+Geist (geist-latin.woff2, geist-latin-ext.woff2) is by Vercel, released under the SIL Open Font License 1.1.
+Source and full licence text: https://github.com/vercel/geist-font

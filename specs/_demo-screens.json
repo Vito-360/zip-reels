@@ -1,0 +1,23 @@
+{
+  "date": "0000-00-00", "slug": "demo-screens", "style": "phone", "pillar": "found", "caption": "Test spec covering the phone screens and the offer scene. Not for publishing.",
+  "duration": 15, "audio": {"bpm": 120, "mood": "deep", "seed": 2},
+  "scenes": [
+    {"type": "phone", "dur": 2.5, "title": ["someone just", "searched for you."],
+     "screen": {"kind": "search", "query": "hairdresser near me", "typing": {"t": 0.0, "dur": 0.7}, "results": [
+        {"name": "Your competitor", "stars": 5, "meta": "Open now", "tags": [{"t": "Website", "tone": "good"}, {"t": "Book online", "tone": "good"}]},
+        {"name": "Another competitor", "stars": 4, "meta": "Open now", "tags": [{"t": "Website", "tone": "good"}]},
+        {"name": "You", "you": true, "stars": 0, "meta": "No reviews shown", "tags": [{"t": "No website", "tone": "bad"}, {"t": "No hours", "tone": "bad"}],
+         "after": {"stars": 5, "meta": "Open now", "tags": [{"t": "Website", "tone": "good"}, {"t": "Book online", "tone": "good"}]}}]},
+     "actions": [{"t": 1.3, "do": "flag", "on": "r2"}, {"t": 1.8, "do": "tap", "on": "r0"}, {"t": 1.9, "do": "highlight", "on": "r0"}, {"t": 2.1, "do": "promote", "on": "r2"}]},
+    {"type": "phone", "dur": 1.5, "title": ["they called", "someone else."], "screen": {"kind": "call", "name": "Your competitor"}},
+    {"type": "phone", "dur": 2, "title": ["your website.", "on their phone."], "screen": {"kind": "oldsite"},
+     "actions": [{"t": 0.5, "do": "tap", "on": "link", "miss": true, "dx": 30, "dy": 24}, {"t": 1.0, "do": "zoom", "on": "link", "to": 2.4}, {"t": 1.7, "do": "tap", "x": 0.6, "y": 0.5, "miss": true}]},
+    {"type": "phone", "dur": 2, "title": ["still", "loading."], "screen": {"kind": "loading", "url": "yourbusiness.com", "rate": 2}, "actions": [{"t": 1.6, "do": "leave"}]},
+    {"type": "phone", "dur": 2, "title": ["your google", "profile."], "screen": {"kind": "listing", "name": "Your business", "category": "Hair salon", "stars": 4, "meta": "reviews", "rows": [
+        {"k": "Hours", "v": "Not listed", "bad": true, "fix": "Open · closes 18:00"}, {"k": "Website", "v": "None", "bad": true, "fix": "yourbusiness.com"}, {"k": "Phone", "v": "098 000 000"}]},
+     "actions": [{"t": 0.8, "do": "fix", "on": "row0", "i": 0}, {"t": 1.1, "do": "fix", "on": "row1", "i": 1}, {"t": 1.4, "do": "fix", "on": "photos", "i": 2}],
+     "labels": [{"t": 0.9, "text": "found.", "sub": "shows up when they search"}, {"t": 1.3, "text": "trusted.", "sub": "looks worth calling"}]},
+    {"type": "phone", "dur": 2, "new_phone": true, "title": ["nine fields.", "one customer lost."], "screen": {"kind": "form"}, "actions": [{"t": 0.3, "do": "scroll", "by": 700, "dur": 1.4}]},
+    {"type": "offer", "dur": 3, "pill": "FREE", "title": "website check.", "list": ["3 findings", "In writing", "No pitch attached"]}
+  ]
+}

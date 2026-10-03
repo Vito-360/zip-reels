@@ -1,0 +1,126 @@
+{
+ "date": "2026-10-05",
+ "slug": "the-2147-message",
+ "style": "phone",
+ "pillar": "booked",
+ "ending": "question",
+ "topic": "A customer messages in the evening, gets a reply next morning, has already booked elsewhere. Fix: online booking.",
+ "duration": 15,
+ "audio": {
+  "bpm": 120,
+  "mood": "pulse",
+  "seed": 5
+ },
+ "scenes": [
+  {
+   "type": "phone",
+   "dur": 7,
+   "title": [
+    "21:47.",
+    "a customer writes."
+   ],
+   "retitle": [
+    {
+     "t": 3.0,
+     "lines": [
+      "you reply",
+      "the next morning."
+     ]
+    },
+    {
+     "t": 5.5,
+     "lines": [
+      "they already",
+      "booked elsewhere."
+     ]
+    }
+   ],
+   "screen": {
+    "kind": "chat",
+    "name": "New customer",
+    "sub": "first message",
+    "initial": "N",
+    "items": [
+     {
+      "t": 0,
+      "stamp": "Today 21:47"
+     },
+     {
+      "t": 0.0,
+      "from": "them",
+      "text": "Hi! Do you have a free slot this Saturday?"
+     },
+     {
+      "t": 1.6,
+      "note": "No reply"
+     },
+     {
+      "t": 3.0,
+      "stamp": "Next day 08:05"
+     },
+     {
+      "t": 3.5,
+      "from": "you",
+      "text": "Good morning! Yes, Saturday at 10 works."
+     },
+     {
+      "t": 5.5,
+      "from": "them",
+      "text": "Thanks, I already booked somewhere else."
+     }
+    ]
+   },
+   "says": [
+    {
+     "t": 0.15,
+     "text": "Nine forty-seven at night. A customer writes to you."
+    },
+    {
+     "t": 3.1,
+     "text": "You reply the next morning. They already booked somewhere else."
+    }
+   ]
+  },
+  {
+   "type": "phone",
+   "dur": 4.5,
+   "turn": true,
+   "title": [
+    "let them book",
+    "while you sleep."
+   ],
+   "screen": {
+    "kind": "newsite",
+    "name": "Your business",
+    "open": "Online booking",
+    "headline": "Pick a time. Done.",
+    "meta": "Google reviews",
+    "button": "Book Saturday 10:00",
+    "button_done": "Booked · Sat 10:00"
+   },
+   "actions": [
+    {
+     "t": 1.5,
+     "do": "press",
+     "on": "btn"
+    }
+   ],
+   "labels": [
+    {
+     "t": 2.2,
+     "text": "booked.",
+     "sub": "one tap, any hour"
+    }
+   ],
+   "say": "Let them book while you sleep. One tap, any hour."
+  },
+  {
+   "type": "end",
+   "dur": 3.5,
+   "tagline": "systems that sell.",
+   "question": "How do customers book you after 9 pm?",
+   "say": "zip. Systems that sell."
+  }
+ ],
+ "caption": "21:47. Someone finally decides to book. They message you. You're having dinner, or asleep, or just not on your phone.\n\nBy 08:05 they've booked someone who let them pick a time on the spot.\n\nNobody did anything wrong here. The path was just one step too long. A booking button that works at any hour closes that gap.\n\nHow do customers book you after 9 pm?"
+}

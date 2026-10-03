@@ -1,0 +1,110 @@
+{
+ "date": "2026-10-07",
+ "slug": "last-updated-2016",
+ "style": "cards",
+ "pillar": "trusted",
+ "ending": "cta",
+ "topic": "An outdated website (old year in the footer, old hours, old photos) makes visitors doubt the business is still running. Three things to update.",
+ "duration": 15,
+ "audio": {
+  "bpm": 120,
+  "mood": "tick",
+  "seed": 3
+ },
+ "scenes": [
+  {
+   "type": "bignum",
+   "dur": 2.8,
+   "label": "your website",
+   "values": [
+    "2026",
+    "2025",
+    "2024",
+    "2023",
+    "2022",
+    "2021",
+    "2020",
+    "2019",
+    "2018",
+    "2017",
+    "2016"
+   ],
+   "step": 0.16,
+   "word": "last updated.",
+   "say": "Your website was last updated in twenty sixteen."
+  },
+  {
+   "type": "flash",
+   "dur": 1.1,
+   "lines": [
+    "Customers",
+    "notice."
+   ],
+   "say": "Customers notice."
+  },
+  {
+   "type": "lines",
+   "dur": 3.0,
+   "kicker": "what they wonder",
+   "lines": [
+    "Are they open?",
+    "Is that the price?",
+    "Do they still exist?"
+   ],
+   "step": 0.85,
+   "say": "Are they open? Is that the price? Do they still exist?"
+  },
+  {
+   "type": "statement",
+   "dur": 2.0,
+   "turn": true,
+   "lines": [
+    "Small details.",
+    "Big doubt."
+   ],
+   "chrome": 1,
+   "say": "Small details create big doubts."
+  },
+  {
+   "type": "cards",
+   "dur": 3.4,
+   "kicker": "three things to update today",
+   "cards": [
+    {
+     "title": "The year.",
+     "sub": "A current date in the footer.",
+     "widget": {
+      "kind": "text",
+      "text": "©2026"
+     }
+    },
+    {
+     "title": "The hours.",
+     "sub": "The ones you actually keep.",
+     "widget": {
+      "kind": "timer",
+      "text": "9–17"
+     }
+    },
+    {
+     "title": "The photos.",
+     "sub": "Your real work, not stock.",
+     "widget": {
+      "kind": "button",
+      "text": "Gallery"
+     }
+    }
+   ],
+   "say": "Three things to update today: the year, your hours, your photos."
+  },
+  {
+   "type": "end",
+   "dur": 2.7,
+   "tagline": "systems that sell.",
+   "cta": "Get the free check",
+   "note": "link in bio · donebyzip.com",
+   "say": "Want a free website check? Link in bio."
+  }
+ ],
+ "caption": "\"© 2016\" in the footer. Opening hours from two summers ago. A price list nobody has touched since.\n\nNone of that is a big mistake. But a visitor can't tell an old website from a closed business, so they go and call someone else.\n\nThree things you can update today: the year, your hours, your photos.\n\nWant to know what else a visitor sees? We'll check your site and send three findings in writing, free. Link in bio."
+}
