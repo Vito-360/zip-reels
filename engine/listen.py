@@ -9,6 +9,7 @@ MODEL_DIR = Path(os.environ.get("ZIP_MODELS", Path(__file__).resolve().parent.pa
 NAME = "sherpa-onnx-whisper-base.en"
 URL = f"https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/{NAME}.tar.bz2"
 _r = None
+NUMBER_WORDS = set("zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred thousand oh".split())
 
 
 def _rec():
@@ -47,6 +48,9 @@ def words(t):
 def match(script, heard):
     """Share of script words that appear, in order, in what was heard (0..1)."""
     a, b = words(script), words(heard)
+    if any(w.isdigit() for w in b):                     # "twenty sixteen" is heard as "2016": leave numbers out of the score
+        a = [w for w in a if w not in NUMBER_WORDS]
+        b = [w for w in b if not w.isdigit()]
     if not a:
         return 1.0
     n, m = len(a), len(b)

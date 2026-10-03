@@ -26,6 +26,18 @@ What is committed: the spec in `specs/` and one new row in `LOG.md`.
 5. **Topic and hook.** Must differ from every row in `LOG.md`: different topic, angle and first line. Check the hook column before writing.
 6. **Ending.** At most two videos per Mon–Fri week end with the free-check CTA (`"cta"` on the end scene). The others end with a concrete question (`"question"`). Seven identical "FREE website check" endings in a row read as ads.
 
+## 2a. Every video must be different
+
+A viewer who saw yesterday's reel must not feel they are watching it again. Run `python3 make.py --history` first, then make sure the new video differs from each of the last five in **all** of these:
+
+- **Topic, angle and hook** (see `LOG.md`).
+- **Scene sequence.** Never reuse the same order of scene types or the same phone screens as the previous video of that style. Open with a different kind of scene than the last two videos did.
+- **At least one visual idea not used in the last five videos**: a screen, action, layout or scene type that has not appeared, or a new one you add to the engine (section 7). `specs/_demo-screens.json` shows what exists.
+- **Music.** Different `mood`, `seed` and `bpm` than the previous two rows.
+- **Ending.** Different end-card question than any before; CTA wording may repeat.
+
+Same brand, new video: the colours, type and logo stay; everything else moves.
+
 ## 3. Content rules
 
 - All on-screen text, voice-over and caption in **English**. Plain, practical, no hype. Short lines: a viewer reads each one in about a second.
@@ -64,9 +76,21 @@ Copy the closest existing spec in `specs/` and change it. Minimal shape:
 
 - Scenes play in order. Each needs `type` and `dur`; durations must add up to 15.
 - Mark the scene where the video turns from problem to solution with `"turn": true`. The beat gets fuller there.
-- Voice-over: `"say": "..."` on a scene (starts 0.15 s in), or `"says": [{"t": 3.1, "text": "..."}]` for several lines in one scene. Roughly 2.6 words per second; leave the first line short. Write numbers as words ("twenty sixteen"), and "zip dot com" style for addresses.
-- Change `audio.seed` and `mood` every day so the music differs (key, pattern and feel all follow the seed).
+- Voice-over: `"say": "..."` on a scene (starts 0.15 s in), or `"says": [{"t": 3.1, "text": "..."}]` for several lines in one scene. See section 5a for what the voice may and may not say.
+- Change `audio.seed`, `mood` and `bpm` (104–128) every day so the music differs (key, pattern, tempo and feel).
 - `style: "kinetic"` gives hard cuts and the small technical HUD; the other two styles fade between scenes over a faint grid.
+
+### 5a. Voice-over rules
+
+The voice is a person reacting to what is on screen. It is not a narrator reading the screen aloud.
+
+- **Three or four short spoken lines per video, no more.** A scene without a `say` is normal. In the build report `voice_share` should stay between 0.3 and 0.5: the voice talks for less than half of the video and the music carries the rest.
+- **Never read the screen word for word.** If the screen says "they already booked elsewhere.", the voice says "Too late, they're gone."
+- **Never spoken:** the tagline, "zip" on its own, "link in bio", web addresses, lists of items, labels, button text, UI text, timestamps and other numbers shown on screen.
+- **Sound like someone who cares.** Short sentences, contractions, everyday words, one thought per line. Use an exclamation mark where a person would lift their voice (usually the hook and the turn), a question where they would ask. No corporate words ("solutions", "leverage", "optimise").
+- A good shape: hook (what just happened) → the sting (what it costs) → the turn (what to do instead) → optionally one closing line (a question or the offer, said the way you would say it to a friend).
+- Roughly 2.8 words per second at the house pace. Write numbers as words if one must be spoken.
+- The house voice and its delivery (pace, pitch movement) are set once in `engine/voice.py` (`DEFAULT`). Do not set `"voice"` in a spec unless the user asked for a different voice for that video.
 
 ### Scene types
 
@@ -114,6 +138,8 @@ Sound effects come automatically from what happens on screen (taps, messages, ch
 bash setup.sh                                   # once per session
 python3 make.py specs/<date>.json --sheet       # fast: 12 check frames only
 python3 make.py specs/<date>.json               # full build, about a minute
+python3 make.py specs/<date>.json --audio-only  # picture unchanged, redo only sound and voice (seconds)
+python3 make.py --history                       # what the last videos used
 ```
 
 Look at `out/<date>-<slug>-sheet.jpg` (open the image) and fix the spec until:
@@ -127,6 +153,7 @@ Then read the build report:
 
 - `voice_lines[].match` below 0.7 means the machine check did not recognise the line: rewrite it (numbers written as words score lower and are fine at 0.7+).
 - `speed` above 1.15 or `overrun` above 0.15: shorten the line or lengthen the scene.
+- `voice_share` above 0.5: the voice talks too much. Cut a line.
 - loudness should be near −14 LUFS with true peak below −1 dBFS.
 
 Nobody in the pipeline can hear the audio. Say that plainly in the summary every time: the team must listen before posting.

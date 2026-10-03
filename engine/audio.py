@@ -383,16 +383,16 @@ def write_wav(path, x):
     sf.write(path, x, SR, subtype="PCM_16")
 
 
-def mix_voice(music, voice):
+def mix_voice(music, voice, target_rms_db=-17.3):
     """music: mastered stereo mix; voice: mono track. Voice sits on top, music ducks under it."""
-    v = np.tanh(voice * 2.2) / np.tanh(2.2)                 # gentle levelling
-    v = hp(v, 85)
+    v = hp(voice, 85)
     pk = np.abs(v).max() or 1.0
     v = v / pk * 0.80
     m = duck(music, v, depth_db=-10.0) * 0.72
     x = m + np.stack([v, v], 1)
+    rms = np.sqrt(np.mean(x ** 2)) + 1e-9
+    x = x * (10 ** (target_rms_db / 20) / rms)
     ceil = 10 ** (-2.0 / 20)
-    pk = np.abs(x).max()
-    if pk > ceil:
+    if np.abs(x).max() > ceil:
         x = np.tanh(x / ceil * 0.9) * ceil / np.tanh(0.9)
     return x.astype(np.float32)

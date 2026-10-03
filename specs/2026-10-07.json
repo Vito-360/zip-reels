@@ -31,7 +31,7 @@
    ],
    "step": 0.16,
    "word": "last updated.",
-   "say": "Your website was last updated in twenty sixteen."
+   "say": "Your website still says twenty sixteen!"
   },
   {
    "type": "flash",
@@ -39,8 +39,7 @@
    "lines": [
     "Customers",
     "notice."
-   ],
-   "say": "Customers notice."
+   ]
   },
   {
    "type": "lines",
@@ -52,7 +51,7 @@
     "Do they still exist?"
    ],
    "step": 0.85,
-   "say": "Are they open? Is that the price? Do they still exist?"
+   "say": "And visitors start to wonder: are you even open?"
   },
   {
    "type": "statement",
@@ -62,8 +61,7 @@
     "Small details.",
     "Big doubt."
    ],
-   "chrome": 1,
-   "say": "Small details create big doubts."
+   "chrome": 1
   },
   {
    "type": "cards",
@@ -94,8 +92,7 @@
       "text": "Gallery"
      }
     }
-   ],
-   "say": "Three things to update today: the year, your hours, your photos."
+   ]
   },
   {
    "type": "end",
@@ -103,7 +100,7 @@
    "tagline": "systems that sell.",
    "cta": "Get the free check",
    "note": "link in bio · donebyzip.com",
-   "say": "Want a free website check? Link in bio."
+   "say": "Want us to check yours? It's free!"
   }
  ],
  "caption": "\"© 2016\" in the footer. Opening hours from two summers ago. A price list nobody has touched since.\n\nNone of that is a big mistake. But a visitor can't tell an old website from a closed business, so they go and call someone else.\n\nThree things you can update today: the year, your hours, your photos.\n\nWant to know what else a visitor sees? We'll check your site and send three findings in writing, free. Link in bio."

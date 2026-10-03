@@ -72,12 +72,12 @@
    },
    "says": [
     {
-     "t": 0.15,
-     "text": "Nine forty-seven at night. A customer writes to you."
+     "t": 0.2,
+     "text": "It's late, and a customer finally wants to book!"
     },
     {
-     "t": 3.1,
-     "text": "You reply the next morning. They already booked somewhere else."
+     "t": 3.4,
+     "text": "You answer in the morning. Too late, they're gone."
     }
    ]
   },
@@ -112,14 +112,13 @@
      "sub": "one tap, any hour"
     }
    ],
-   "say": "Let them book while you sleep. One tap, any hour."
+   "say": "So let them book while you sleep!"
   },
   {
    "type": "end",
    "dur": 3.5,
    "tagline": "systems that sell.",
-   "question": "How do customers book you after 9 pm?",
-   "say": "zip. Systems that sell."
+   "question": "How do customers book you after 9 pm?"
   }
  ],
  "caption": "21:47. Someone finally decides to book. They message you. You're having dinner, or asleep, or just not on your phone.\n\nBy 08:05 they've booked someone who let them pick a time on the spot.\n\nNobody did anything wrong here. The path was just one step too long. A booking button that works at any hour closes that gap.\n\nHow do customers book you after 9 pm?"

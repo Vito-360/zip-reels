@@ -21,7 +21,7 @@
     "don't know",
     "your name."
    ],
-   "say": "New customers don't know your name."
+   "say": "A new customer has never heard of you!"
   },
   {
    "type": "chaos",
@@ -43,7 +43,7 @@
     "near me",
     "open late"
    ],
-   "say": "They type what they need. Plumber near me."
+   "say": "They just type what they need."
   },
   {
    "type": "blurtype",
@@ -55,7 +55,7 @@
     "what you do."
    ],
    "chrome": 1,
-   "say": "They search what you do."
+   "say": "So make sure Google knows what you do!"
   },
   {
    "type": "stack",
@@ -68,8 +68,7 @@
     "photos",
     "reviews",
     "website"
-   ],
-   "say": "Tell Google your category, hours, photos, reviews and website."
+   ]
   },
   {
    "type": "slam",
@@ -79,7 +78,7 @@
     "be the",
     "answer."
    ],
-   "say": "Be the answer."
+   "say": "Be the answer!"
   },
   {
    "type": "end",

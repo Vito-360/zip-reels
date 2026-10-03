@@ -3,7 +3,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 PIP="python3 -m pip install -q"
-$PIP numpy scipy pillow soundfile playwright kokoro-onnx sherpa-onnx 2>/dev/null || $PIP --break-system-packages numpy scipy pillow soundfile playwright kokoro-onnx sherpa-onnx
+$PIP numpy scipy pillow soundfile playwright kokoro-onnx sherpa-onnx pyworld 2>/dev/null || $PIP --break-system-packages numpy scipy pillow soundfile playwright kokoro-onnx sherpa-onnx pyworld
 command -v ffmpeg >/dev/null || { echo "ffmpeg is missing"; exit 1; }
 python3 - <<'PY'
 import sys
