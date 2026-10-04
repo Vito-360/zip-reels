@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "engine"))
 import render, audio  # noqa: E402
 
-SCENE_TYPES = {"phone", "bignum", "flash", "lines", "statement", "cards", "offer", "end", "chaos", "blurtype", "stack", "slam"}
+SCENE_TYPES = {"phone", "bignum", "flash", "lines", "statement", "cards", "offer", "end", "chaos", "blurtype", "stack", "slam", "cut"}
 
 
 def validate(spec):

@@ -108,6 +108,7 @@ The voice is a person reacting to what is on screen. It is not a narrator readin
 | `blurtype` | kinetic: lines resolve from a blur | `lines`, `chrome`, `stripes`, `sub` |
 | `stack` | kinetic: list on a rail | `items`, `kicker`, `collapse` |
 | `slam` | kinetic: 1–3 huge lines, last one chrome | `lines`, `sub` |
+| `cut` | a long list; items not in `keep` are struck out and drop away, the kept ones grow to fill the frame | `items`, `keep` (indexes), `kicker`, `kicker_after`, `sub`, `cut_at`, `step` |
 
 Consecutive `phone` scenes share one phone; the screen changes inside it. With `labels`, the phone moves left and the labels appear on the right.
 
@@ -122,11 +123,11 @@ Consecutive `phone` scenes share one phone; the screen changes inside it. With `
 | `chat` | `name`, `sub`, `items [{t, stamp} / {t, from: them/you, text} / {t, note, bad}]` | – |
 | `listing` | `name`, `category`, `stars`, `meta`, `photos`, `rows [{k, v, bad, fix}]` | `row0`…, `photos` |
 | `loading` | `url`, `rate`, `count_to`, `caption` | – |
-| `form` | `title`, `fields`, `submit` | `submit` |
+| `form` | `title`, `fields`, `submit`, `submit_done`, `counter` (chip "1 of 11" that counts typed fields), `short` (large friendly form, dark full-width button), `extras` (small lines under the button) | `f0`, `f1`… , `submit` |
 
 ### Actions (`actions: [{t, do, on}]`, `t` is seconds from the scene start)
 
-`tap` (add `"miss": true` for a missed tap), `highlight`, `flag` (mark red), `promote` (move a search result to the top with a #1 badge), `zoom` (`to`), `scroll` (`by`, `dur`), `press` (tap a button and switch it to its done state), `fix` (turn a bad listing row or the photos good), `leave` (the screen slides away). Use `on` with a key from the table, or `x`/`y` from 0 to 1 on the screen.
+`tap` (add `"miss": true` for a missed tap), `highlight`, `flag` (mark red), `promote` (move a search result to the top with a #1 badge), `zoom` (`to`), `scroll` (`by`, `dur`), `press` (tap a button and switch it to its done state), `fix` (turn a bad listing row or the photos good), `type` (`text`, `dur`: types into a form field), `leave` (the screen slides away). Use `on` with a key from the table, or `x`/`y` from 0 to 1 on the screen.
 
 `specs/_demo-screens.json` uses every screen and most actions. Use it as a reference; do not publish it.
 

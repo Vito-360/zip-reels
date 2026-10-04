@@ -1,0 +1,177 @@
+{
+ "date": "2026-10-08",
+ "slug": "eleven-fields",
+ "style": "phone",
+ "pillar": "booked",
+ "ending": "question",
+ "topic": "A contact form that asks for far more than you need to reply. The customer starts, scrolls, gives up. Fix: ask for a name, a phone number and the message.",
+ "duration": 15,
+ "audio": {
+  "bpm": 112,
+  "mood": "deep",
+  "seed": 13
+ },
+ "scenes": [
+  {
+   "type": "phone",
+   "dur": 4.6,
+   "title": [
+    "one question.",
+    "eleven fields."
+   ],
+   "retitle": [
+    {
+     "t": 3.4,
+     "lines": [
+      "too long.",
+      "they left."
+     ]
+    }
+   ],
+   "screen": {
+    "kind": "form",
+    "title": "Contact form",
+    "counter": true,
+    "fields": [
+     "Name",
+     "Surname",
+     "Email",
+     "Phone",
+     "Company",
+     "Address",
+     "City",
+     "Postal code",
+     "Date of birth",
+     "How did you find us?",
+     "Message"
+    ],
+    "submit": "Submit",
+    "extras": [
+     "* All fields are required"
+    ]
+   },
+   "actions": [
+    {
+     "t": 0.45,
+     "do": "tap",
+     "on": "f0"
+    },
+    {
+     "t": 0.6,
+     "do": "type",
+     "on": "f0",
+     "text": "Ana",
+     "dur": 0.4
+    },
+    {
+     "t": 1.3,
+     "do": "scroll",
+     "by": 760,
+     "dur": 2.0
+    },
+    {
+     "t": 3.75,
+     "do": "leave"
+    }
+   ],
+   "says": [
+    {
+     "t": 0.2,
+     "text": "They just wanted to ask you something!"
+    },
+    {
+     "t": 2.8,
+     "text": "Nobody fills in all that!"
+    }
+   ]
+  },
+  {
+   "type": "cut",
+   "dur": 4.4,
+   "turn": true,
+   "kicker": "what your form asks for",
+   "kicker_after": "what you need to reply",
+   "items": [
+    "name",
+    "surname",
+    "email",
+    "phone",
+    "company",
+    "address",
+    "city",
+    "postal code",
+    "date of birth",
+    "how did you find us?",
+    "message"
+   ],
+   "keep": [
+    0,
+    3,
+    10
+   ],
+   "cut_at": 0.8,
+   "step": 0.12,
+   "say": "So cut it! Ask less, and they'll actually write.",
+   "sub": "Enough to call them back."
+  },
+  {
+   "type": "phone",
+   "dur": 3.2,
+   "title": [
+    "three fields.",
+    "they hit send."
+   ],
+   "screen": {
+    "kind": "form",
+    "short": true,
+    "title": "Ask us anything",
+    "fields": [
+     "Name",
+     "Phone",
+     "Message"
+    ],
+    "submit": "Send",
+    "submit_done": "Sent",
+    "extras": [
+     "That's all we need."
+    ]
+   },
+   "actions": [
+    {
+     "t": 0.55,
+     "do": "type",
+     "on": "f0",
+     "text": "Ana",
+     "dur": 0.25
+    },
+    {
+     "t": 0.95,
+     "do": "type",
+     "on": "f1",
+     "text": "098 000 000",
+     "dur": 0.35
+    },
+    {
+     "t": 1.45,
+     "do": "type",
+     "on": "f2",
+     "text": "Do you have time this week?",
+     "dur": 0.5
+    },
+    {
+     "t": 2.2,
+     "do": "press",
+     "on": "submit"
+    }
+   ]
+  },
+  {
+   "type": "end",
+   "dur": 2.8,
+   "tagline": "systems that sell.",
+   "question": "How many fields does your contact form have?",
+   "say": "How long is yours?"
+  }
+ ],
+ "caption": "Someone has one question for you. They open your contact form and find eleven boxes: surname, company, postal code, date of birth.\n\nThey fill in one, scroll, and close the tab. Not because they changed their mind about you. Because asking was more work than it was worth.\n\nTo answer a new customer you need three things: a name, a way to reach them, and what they want. Everything else can wait until you're actually talking.\n\nNo website yet? The same rule applies wherever people reach you: keep the first step small.\n\nHow many fields does your contact form have?"
+}

@@ -189,11 +189,23 @@ SCR.loading = (scr, d, s) => {
   return { keys: {}, inner };
 };
 SCR.form = (scr, d) => {
-  const inner = $('div', 'inner', scr), keys = {};
-  $('div', 'form-h', inner, d.title || 'Contact form');
-  (d.fields || ['First name', 'Last name', 'Email', 'Phone', 'Company', 'Address', 'Subject', 'How did you hear about us?', 'Message']).forEach(f => { const w = $('div', 'fld' + (/message/i.test(f) ? ' big' : ''), inner); $('label', '', w, f + ' *'); $('div', '', w); });
-  keys.submit = $('div', 'form-sub', inner, d.submit || 'Submit');
-  return { keys, inner };
+  if (d.short) scr.classList.add('short');
+  const fields = (d.fields || ['First name', 'Last name', 'Email', 'Phone', 'Company', 'Address', 'Subject', 'How did you hear about us?', 'Message']).map(f => (typeof f === 'string' ? { label: f } : f));
+  const bar = $('div', 'form-bar', scr); $('div', 'form-h', bar, d.title || 'Contact form');
+  const chip = d.counter ? $('span', 'form-chip', bar, '') : null;
+  const inner = $('div', 'inner', scr), keys = {}, fills = [];
+  fields.forEach((f, i) => {
+    const w = $('div', 'fld' + ((f.big ?? /message/i.test(f.label)) ? ' big' : ''), inner);
+    $('label', '', w, f.label + (d.short || d.required === false ? '' : ' *'));
+    const box = $('div', '', w); box._val = $('span', '', box, f.value || '');
+    keys['f' + i] = box;
+  });
+  const sub = $('div', 'form-sub', inner); $('span', 'b1', sub, d.submit || 'Submit');
+  const b2 = $('span', 'b2', sub); b2.innerHTML = CHECK_W.replace('<svg', '<svg style="width:40px;height:40px"'); $('span', '', b2, d.submit_done || 'Sent');
+  keys.submit = sub;
+  (d.extras || []).forEach(x => $('div', 'form-x', inner, x));
+  if (chip) tick(t => { chip.textContent = fills.filter(x => t >= x - 1e-6).length + ' of ' + fields.length; });
+  return { keys, inner, fills };
 };
 
 function centerIn(el, scr) { let x = el.offsetWidth / 2, y = el.offsetHeight / 2, n = el; while (n && n !== scr) { x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent; } return [x, y]; }
@@ -214,6 +226,14 @@ function act(scr, api, a, s) {
     case 'scroll': A(api.inner, { translate: ['0px 0px', `0px ${-(a.by || 400)}px`] }, { at: t, dur: a.dur || 1, ease: EASE.io }); cue(t, 'scroll', { dur: a.dur || 1 }); break;
     case 'press': tapAt(scr, pos(), t); classAt(el, 'done', t + 0.14); A(el, { scale: [1, .95, 1] }, { at: t, dur: .3 }); cue(t + 0.14, 'ding', { i: 2 }); break;
     case 'fix': classAt(el, 'fixed', t); if (el.classList.contains('bad')) classAt(el, 'bad', -1, t); A(el, { scale: [1.035, 1] }, { at: t, dur: .4 }); cue(t, 'ding', { i: a.i || 0 }); break;
+    case 'type': {
+      const sp = el._val || el, full = a.text || '', du = a.dur ?? Math.min(0.9, full.length * 0.05);
+      tick(tm => { sp.textContent = full.slice(0, Math.round(clamp((tm - t) / du, 0, 1) * full.length)); });
+      classAt(el, 'on', t);
+      for (let k = 0; k < full.length; k += 2) cue(t + du * k / full.length, 'key');
+      if (api.fills) api.fills.push(t + du);
+      break;
+    }
     case 'leave': A(scr, { translate: ['0 0', '112% 0'] }, { at: t, dur: .45, ease: EASE.in }); cue(t, 'whoosh'); break;
     case 'promote': {
       const cards = Object.keys(api.keys).filter(k => /^r\d+$/.test(k)).map(k => api.keys[k]);
@@ -355,6 +375,39 @@ S.offer = s => {
     s.list.forEach((x, i) => { const r = $('div', '', l); $('i', '', r).innerHTML = CHECK; $('span', '', r, x); const a = s.at + .7 + i * (s.gap ?? .4); A(r, { opacity: [0, 1], translate: ['-30px 0', '0 0'] }, { at: a, dur: .4 }); cue(a, 'ding', { i }); });
   } else if (s.sub) { const p = $('div', 'center offer-sub', root, s.sub); A(p, { opacity: [0, 1], translate: ['0 30px', '0 0'] }, { at: s.at + .5, dur: .45 }); }
 };
+/* cut: a long list; every item not in `keep` is struck out and drops away, the kept ones grow to fill the frame. */
+S.cut = s => {
+  const root = sceneRoot(s), items = s.items || [], keep = s.keep || [0], LS = 1.22, LB = 1.04;
+  const tmp = $('div', 'cut', root); keep.forEach(i => $('div', 'it', tmp, items[i]));
+  const big = fit(tmp, 936, s.size || 190, 80); tmp.remove();
+  const box = $('div', 'cut', root);
+  items.forEach((x, i) => { const it = $('div', 'it', box); $('span', '', it, x); if (!keep.includes(i)) $('i', '', it); });
+  const small = Math.min(fit(box, 936, 120, 40), clamp(Math.floor(900 / items.length / LS), 40, 120));
+  box.style.fontSize = small + 'px'; box.style.lineHeight = LS;
+  const top = vcenter(box, 800);
+  const els = [...box.children], tops = els.map(e => e.offsetTop);
+  const st = s.at === 0 ? -0.3 - items.length * 0.04 : s.at;
+  els.forEach((it, i) => A(it, { opacity: [0, 1], translate: ['-40px 0px', '0px 0px'], filter: ['blur(8px)', 'blur(0px)'] }, { at: st + i * (s.stagger ?? 0.04), dur: .3 }));
+  const gone = items.map((_, i) => i).filter(i => !keep.includes(i));
+  const t0 = s.at + (s.cut_at ?? 0.9), step = s.step ?? 0.11, tc = s.at + (s.collapse_at ?? ((s.cut_at ?? 0.9) + gone.length * step + 0.3));
+  gone.forEach((i, n) => {
+    const it = els[i], a = t0 + n * step;
+    A(it.querySelector('i'), { scale: ['0 1', '1 1'] }, { at: a, dur: .16, ease: EASE.io });
+    A(it.querySelector('span'), { opacity: [1, .38] }, { at: a, dur: .2 });
+    cue(a, 'tick', { i: n });
+    A(it, { opacity: [1, 0], translate: ['0px 0px', '-90px 0px'], filter: ['blur(0px)', 'blur(10px)'] }, { at: tc + n * 0.015, dur: .3, ease: EASE.in });
+  });
+  const subH = s.sub ? 110 : 0, H = keep.length * big * LB + subH, topB = Math.max(300, Math.round(800 - H / 2)), k = big / small;
+  keep.forEach((i, j) => {
+    const it = els[i], dy = topB + j * big * LB + big * (LB - LS) / 2 - (top + tops[i]);
+    A(it, { translate: ['0px 0px', `0px ${dy}px`], scale: [1, k] }, { at: tc + 0.08, dur: .62, ease: EASE.io });
+    cue(tc + 0.55 + j * 0.09, 'ding', { i: j });
+  });
+  cue(tc, 'whoosh');
+  if (s.kicker) { const kk = $('div', 'kicker', root, s.kicker); kk.style.textAlign = 'left'; kk.style.left = '72px'; kk.style.top = (top - 70) + 'px'; A(kk, { opacity: [0, 1] }, { at: startOf(s), dur: .4 }); A(kk, { opacity: [1, 0] }, { at: tc, dur: .2, ease: EASE.lin }); }
+  if (s.kicker_after) { const kk = $('div', 'kicker', root, s.kicker_after); kk.style.textAlign = 'left'; kk.style.left = '72px'; kk.style.top = (topB - 70) + 'px'; A(kk, { opacity: [0, 1] }, { at: tc + 0.45, dur: .4 }); }
+  if (s.sub) { const sub = $('div', 'cut-sub', root, s.sub); sub.style.top = Math.round(topB + keep.length * big * LB + 30) + 'px'; A(sub, { opacity: [0, 1], translate: ['0 30px', '0 0'] }, { at: tc + 0.75, dur: .5 }); }
+};
 S.end = s => {
   const root = sceneRoot(s);
   const lg = $('div', 'end-logo', root); lg.innerHTML = LOGO;
@@ -444,7 +497,7 @@ S.slam = s => {
 for (let i = 0; i < scenes.length; i++) {
   const s = scenes[i];
   if (s.type === 'phone') { const run = [s]; while (scenes[i + 1] && scenes[i + 1].type === 'phone' && !scenes[i + 1].new_phone) run.push(scenes[++i]); phoneRun(run); }
-  else if (S[s.type]) { S[s.type](s); if (s.at > 0 && !['flash', 'offer', 'end', 'bignum', 'slam', 'chaos', 'statement', 'blurtype'].includes(s.type)) cue(s.at, 'swish'); }
+  else if (S[s.type]) { S[s.type](s); if (s.at > 0 && !['flash', 'offer', 'end', 'bignum', 'slam', 'chaos', 'statement', 'blurtype', 'cut'].includes(s.type)) cue(s.at, 'swish'); }
   else console.error('unknown scene type', s.type);
 }
 if (KIN || SPEC.hud) {
