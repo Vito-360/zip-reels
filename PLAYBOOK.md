@@ -26,6 +26,17 @@ What is committed: the spec in `specs/` and one new row in `LOG.md`.
 5. **Topic and hook.** Must differ from every row in `LOG.md`: different topic, angle and first line. Check the hook column before writing.
 6. **Ending.** At most two videos per Mon–Fri week end with the free-check CTA (`"cta"` on the end scene). The others end with a concrete question (`"question"`). Seven identical "FREE website check" endings in a row read as ads.
 
+## 2b. Tied or independent
+
+Of the five videos in a week, one or two are **tied** to that week's image posts; the others are **independent** (an owner problem chosen by the rules above, unrelated to the posts).
+
+- A tied video is the 15-second version of one general-story carousel from the Canva folder "zip – Instagram" (designs named `<Monday's date> – STORY – <title>`; a story carousel made before this naming rule counts too if it is clearly this week's). Take the first story that has no tied video in `LOG.md`.
+- Shape: the hook is the story's headline fact, the middle shows its one point, the ending turns it toward the small-business owner, exactly as the carousel does.
+- Use **only** facts that are on the design. No new facts, numbers or names. Company names the post itself names may appear as text; no logos.
+- Do not mention a posting day in the caption. "The full story is on our profile." is fine.
+- Topic and hook come from the post; style, music and ending still follow the rotation. A story video that is not built on Found / Trusted / Booked uses `"pillar": "none"` and does not count in the pillar rotation.
+- Set `"tied": "<design title>"` in the spec and fill the `tied` column in `LOG.md` (`independent` otherwise), so the team can schedule the video on the same day as its post.
+
 ## 2a. Every video must be different
 
 A viewer who saw yesterday's reel must not feel they are watching it again. Run `python3 make.py --history` first, then make sure the new video differs from each of the last five in **all** of these:
@@ -49,6 +60,7 @@ Same brand, new video: the colours, type and logo stay; everything else moves.
 - Mock screens show generic businesses ("Your business", "Your competitor"). No real company names or logos, no real Google interface copied; "Google" as a word is fine.
 - Caption: 3–6 short paragraphs, no emoji spam, no hashtag wall, ends with a concrete question or a soft CTA ("link in bio").
 - CTA wording: "Get the free check" + "link in bio · donebyzip.com". The address alone is not clickable in an organic reel.
+- **No pillar label in a corner.** Never show "Found", "Trusted", "Booked" or "Found / Trusted / Booked" as a label, tag or HUD text in any corner of the video or the cover. The words may appear inside the content itself (a headline, a callout, the scene) when the video is about them. The technical HUD of the kinetic style is off by default for the same reason (`"hud": true` turns it on; do not use it for published videos).
 
 ## 4. Design rules (already built into the engine, do not fight them)
 
@@ -58,6 +70,19 @@ Same brand, new video: the colours, type and logo stay; everything else moves.
 - No watermarks, page counters or swipe hints.
 - Instagram covers roughly the top 14% and the bottom 35% of a reel. Headlines, taps and buttons stay between y≈270 and y≈1300. The engine places them there; do not push text lower.
 - Instagram recommends fewer reels that are mostly text. Prefer a scene (a phone, cards, something happening) over a wall of words, even in the kinetic style.
+
+## 4a. Eye path
+
+Every video is built around where the viewer's eyes go. From eye-tracking research on video: the first look goes to screen centre, motion pulls the gaze, and viewers' gaze clusters in a small part of the frame (Smith & Mital 2013); after a cut everyone's gaze re-converges within about half a second, slightly above centre (Bruckert, Christie & Le Meur 2022); text is fixated almost at once (Cerf, Frady & Koch 2009).
+
+1. **First frame.** The hook text or the key object sits at screen centre or slightly above it, inside the safe zone. Nothing important at the edges or in corners.
+2. **Cuts.** Put the new scene's key element where the previous key element was, or at centre, so nobody has to search for it.
+3. **Motion.** Move one thing at a time, and make it the thing that must be seen or read. No moving decoration while text has to be read.
+4. **Text.** One text block on screen at a time, meaning-carrying words first, held long enough to read once at a normal pace (about four words a second).
+5. **Cover.** Same logic as a still: the main text in the upper-centre area as one block.
+6. **Check.** On the sheet, say for each scene where the eye lands first and where it goes next. Fix any scene where the first look lands on something unimportant. Put the eye path in one line in the summary.
+
+The story scenes (`button`, `merge`, `count`) are built on this: a centred headline whose bottom edge is at y=900 and one object centred on y=1040, in the same place in every scene.
 
 ## 5. Write the spec
 
@@ -77,8 +102,9 @@ Copy the closest existing spec in `specs/` and change it. Minimal shape:
 - Scenes play in order. Each needs `type` and `dur`; durations must add up to 15.
 - Mark the scene where the video turns from problem to solution with `"turn": true`. The beat gets fuller there.
 - Voice-over: `"say": "..."` on a scene (starts 0.15 s in), or `"says": [{"t": 3.1, "text": "..."}]` for several lines in one scene. See section 5a for what the voice may and may not say.
-- Change `audio.seed`, `mood` and `bpm` (104–128) every day so the music differs (key, pattern, tempo and feel).
-- `style: "kinetic"` gives hard cuts and the small technical HUD; the other two styles fade between scenes over a faint grid.
+- Change `audio.seed`, `mood` (`pulse`, `bounce`, `deep`, `tick`, `snap`) and `bpm` (104–128) every day so the music differs (key, pattern, tempo and feel). Add a new mood to `MOODS` in `engine/audio.py` when the last videos have used them all.
+- Optional: `"tied": "<design title>"` (section 2b), `"cover_at": <seconds>` (frame used for the cover, default 0).
+- `style: "kinetic"` gives hard cuts on plain black; the other two styles fade between scenes over a faint grid.
 
 ### 5a. Voice-over rules
 
@@ -109,6 +135,9 @@ The voice is a person reacting to what is on screen. It is not a narrator readin
 | `stack` | kinetic: list on a rail | `items`, `kicker`, `collapse` |
 | `slam` | kinetic: 1–3 huge lines, last one chrome | `lines`, `sub` |
 | `cut` | a long list; items not in `keep` are struck out and drop away, the kept ones grow to fill the frame | `items`, `keep` (indexes), `kicker`, `kicker_after`, `sub`, `cut_at`, `step` |
+| `button` | story: centred headline over one pill button that gets clicked (mouse cursor) or tapped (finger) | `lines`, `chrome` (line index), `label`, `label_done`, `check` (lime check when done), `pointer` (`cursor`/`tap`), `press_at`, `stamp` `{t, text}` |
+| `merge` | story: a row of labelled steps is struck out and collapses into one circle, then a second headline line appears | `lines`, `after` `{t, line}`, `items`, `lead`, `step`, `strike_at`, `merge_at`, `into` |
+| `count` | story: the circle counts up in place, the name of the current step under it, one more ring behind it per count | `lines`, `items`, `lead`, `step`, `outro` `{t, text}`, `collapse` |
 
 Consecutive `phone` scenes share one phone; the screen changes inside it. With `labels`, the phone moves left and the labels appear on the right.
 
@@ -145,7 +174,9 @@ python3 make.py --history                       # what the last videos used
 
 Look at `out/<date>-<slug>-sheet.jpg` (open the image) and fix the spec until:
 
-- frame 1 shows the complete hook, sharp
+- frame 1 shows the complete hook, sharp, at centre or slightly above it
+- no pillar label or other text sits in a corner
+- the eye path works in every scene (section 4a)
 - no text is cut off, overlapping, or below the safe area
 - every line stays on screen long enough to read
 - lime appears only on CTA elements
@@ -164,7 +195,7 @@ Nobody in the pipeline can hear the audio. Say that plainly in the summary every
 1. Add a row to `LOG.md`.
 2. Commit `specs/<date>.json` and `LOG.md` to `main` and push.
 3. Send the files to the user: both MP4s and the cover.
-4. Reply in **Croatian** with a short summary: day and date, style, pillar, topic, hook, how it ends, the voice-over script, the caption (English), and anything that could not be done or checked.
+4. Reply in **Croatian** with a short summary: day and date and whether the video is tied (to which post) or independent, style, pillar (only if the video is built on it), topic, hook, the eye path in one line, what is visually new, how it ends, the voice-over script, the caption (English), and anything that could not be done or checked.
 
 Never post to Instagram. These are drafts for the team.
 

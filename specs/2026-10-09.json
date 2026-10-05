@@ -1,0 +1,106 @@
+{
+ "date": "2026-10-09",
+ "slug": "amazon-patented-a-button",
+ "style": "kinetic",
+ "pillar": "none",
+ "ending": "question",
+ "tied": "Amazon patented a button",
+ "topic": "Tied to the carousel 'Amazon patented a button': in 1999 Amazon was granted a patent on 1-Click, four checkout steps became one. Turn: count the steps between Google and a booking with you, and make it one tap.",
+ "duration": 15,
+ "audio": {
+  "bpm": 126,
+  "mood": "snap",
+  "seed": 22
+ },
+ "scenes": [
+  {
+   "type": "button",
+   "tag": "hook",
+   "dur": 2.7,
+   "lines": [
+    "Amazon",
+    "patented",
+    "a button."
+   ],
+   "label": "Buy now",
+   "pointer": "cursor",
+   "press_at": 1.2,
+   "stamp": {
+    "t": 1.5,
+    "text": "patented · 1999"
+   },
+   "say": "Wait, they patented that? Really!"
+  },
+  {
+   "type": "merge",
+   "tag": "one click",
+   "dur": 3.5,
+   "lines": [
+    "four steps"
+   ],
+   "after": {
+    "t": 2.4,
+    "line": "became one."
+   },
+   "items": [
+    "Cart",
+    "Sign in",
+    "Address",
+    "Card"
+   ],
+   "strike_at": 1.3,
+   "merge_at": 1.8,
+   "into": "1",
+   "say_at": 0.3,
+   "say": "No cart, no forms. One click, done!",
+   "lead": 0.25
+  },
+  {
+   "type": "count",
+   "tag": "your steps",
+   "dur": 4.9,
+   "turn": true,
+   "lines": [
+    "now count",
+    "your steps."
+   ],
+   "items": [
+    "search",
+    "open site",
+    "find contact",
+    "fill in form",
+    "wait for reply"
+   ],
+   "lead": 0.35,
+   "step": 0.58,
+   "outro": {
+    "t": 3.3,
+    "text": "five places to lose someone."
+   },
+   "say": "And yours? That's a long road!"
+  },
+  {
+   "type": "button",
+   "tag": "one tap",
+   "dur": 1.6,
+   "lines": [
+    "make it",
+    "one tap."
+   ],
+   "chrome": 1,
+   "label": "Book now",
+   "label_done": "Booked",
+   "check": true,
+   "pointer": "tap",
+   "press_at": 0.55
+  },
+  {
+   "type": "end",
+   "dur": 2.3,
+   "tagline": "systems that sell.",
+   "question": "How many steps from Google to booking you?",
+   "say": "Go on, count them!"
+  }
+ ],
+ "caption": "In 1999 Amazon was granted a patent on 1-Click: buy with a single click, no cart and no checkout form.\n\nFour steps became one. Every step you remove is one less moment for a customer to change their mind.\n\nNow count yours: search, open the site, find the contact, fill in the form, wait for a reply. Every step between Google and a confirmed booking is a place to lose someone.\n\nMake it one tap. A booking link, a WhatsApp button or a three-field form. Pick one and put it at the top of every page.\n\nThe full story is on our profile. How many steps from Google to booking you?"
+}

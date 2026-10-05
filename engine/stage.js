@@ -412,7 +412,7 @@ S.end = s => {
   const root = sceneRoot(s);
   const lg = $('div', 'end-logo', root); lg.innerHTML = LOGO;
   A(lg, { opacity: [0, 1], scale: [.86, 1], filter: ['blur(18px)', 'blur(0px)'] }, { at: s.at, dur: .6 });
-  A(lg.querySelector('.sheen'), { transform: ['translate(0px,0px)', 'translate(380px,0px)'] }, { at: s.at + .35, dur: 1.2, ease: EASE.io });
+  A(lg.querySelector('.sheen'), { transform: ['translate(0px,0px)', 'translate(380px,0px)'] }, { at: s.at + .08, dur: .6, ease: EASE.io });   // done before the CTA or question appears
   cue(s.at, 'logo');
   const tag = $('div', 'center end-tag', root, s.tagline || 'systems that sell.');
   A(tag, { opacity: [0, 1], translate: ['0 30px', '0 0'] }, { at: s.at + .35, dur: .5 });
@@ -493,14 +493,126 @@ S.slam = s => {
   if (sub) A(sub, { opacity: [0, 1], translate: ['0 30px', '0 0'] }, { at: s.at + lead + s.lines.length * step + .1, dur: .5 });
 };
 
+/* ------------------------------------------------------------------ story scenes
+   One layout for all three: a centred headline whose bottom edge sits at y=900 and one object centred on
+   y=1040. The object stays in the same place across cuts, so the eye never has to search for it.
+   The headline is complete and sharp on the scene's first frame; after that only the object moves. */
+const ANCHOR_Y = 1040;
+const CURSOR = '<svg viewBox="0 0 50 72"><path d="M4 4V58L18 45 28 68 38 64 28 41H47Z" fill="#fafafa" stroke="#000" stroke-width="3.5" stroke-linejoin="round"/></svg>';
+function storyHead(root, s, lines, chrome) {
+  const el = $('div', 'st-head', root);
+  lines.forEach((l, i) => { const ln = $('span', 'ln', el, l); if (chrome === i) ln.classList.add('chrome'); });
+  fit(el, 940, s.size || 180, 80);
+  if (s.at > 0) A(el, { scale: [1.05, 1] }, { at: s.at, dur: .2 });
+  cue(s.at, s.at === 0 ? 'hit' : 'slam');
+  return el;
+}
+function boxRow(root, items, cls) {
+  const row = $('div', 'st-row', root), n = items.length, w = Math.floor((960 - (n - 1) * 22) / n);
+  const els = items.map(x => { const b = $('div', 'st-box ' + (cls || ''), row, x); b.style.width = w + 'px'; return b; });
+  if (!cls) { row.style.fontSize = '100px'; const widest = Math.max(...els.map(b => { const r = document.createRange(); r.selectNodeContents(b); return r.getBoundingClientRect().width; })); row.style.fontSize = clamp(Math.floor(100 * (w - 34) / widest), 26, 50) + 'px'; }
+  return els;
+}
+const toCentre = (el, t, dur) => { const dx = 540 - (el.offsetLeft + el.offsetWidth / 2); A(el, { translate: ['0px 0px', `${dx}px 0px`], scale: [1, .25], opacity: [1, 0] }, { at: t, dur, ease: EASE.in }); };
+/* button: headline + one pill button. A mouse cursor clicks it (pointer "cursor") or a finger taps it ("tap"). */
+S.button = s => {
+  const root = sceneRoot(s);
+  storyHead(root, s, s.lines || [], s.chrome);
+  const obj = $('div', 'st-obj', root), wrap = $('div', 'st-btnwrap', obj);
+  $('div', 'st-btnsh', wrap);
+  const btn = $('div', 'st-btn', wrap);
+  $('span', 'b1', btn, s.label || 'Buy now');
+  const b2 = $('span', 'b2', btn); if (s.check) $('i', '', b2).innerHTML = CHECK; $('span', '', b2, s.label_done || s.label || 'Buy now');
+  const w1 = btn.offsetWidth; btn.classList.add('done'); const w2 = btn.offsetWidth; btn.classList.remove('done');
+  btn.style.width = Math.max(w1, w2) + 'px';
+  if (s.at > 0) A(wrap, { scale: [.6, 1], opacity: [0, 1] }, { at: s.at, dur: .26, ease: EASE.back });
+  const W = btn.offsetWidth, H = btn.offsetHeight, tp = s.at + (s.press_at ?? 1.3);
+  const px = 540 + W * (s.pointer === 'tap' ? 0.2 : 0.36), py = ANCHOR_Y + 16;
+  if (s.pointer === 'tap') {
+    const d = $('div', 'tap light st-tap', root); d.style.left = px + 'px'; d.style.top = py + 'px';
+    A(d, { opacity: [0, 1, 1, 0], scale: [1.7, 1, 1, 1.3], offset: [0, .45, .7, 1] }, { at: tp - 0.26, dur: 0.6, ease: EASE.lin });
+    cue(tp, 'tap');
+  } else {
+    const c = $('div', 'st-cursor', root); c.innerHTML = CURSOR;
+    const t0 = tp - 0.62; showBetween(c, t0);
+    A(c, { translate: [`${px + 300}px ${py + 400}px`, `${px}px ${py}px`] }, { at: t0, dur: .55, ease: EASE.io });
+    A(c, { opacity: [0, 1] }, { at: t0, dur: .12, ease: EASE.lin });
+    A(c, { scale: [1, .86, 1] }, { at: tp - 0.03, dur: .2 });
+    cue(t0 + 0.05, 'swish'); cue(tp, 'click');
+  }
+  classAt(btn, 'done', tp + 0.02);
+  A(wrap, { scale: [1, .94, 1] }, { at: tp, dur: .28 });
+  const ring = $('div', 'st-ring', root); ring.style.left = px + 'px'; ring.style.top = py + 'px';
+  A(ring, { scale: [.3, 2.4], opacity: [.9, 0] }, { at: tp, dur: .45 }); showBetween(ring, tp, tp + 0.45);
+  if (s.check) cue(tp + 0.08, 'ding', { i: 2 });
+  if (s.stamp) {
+    const st = $('div', 'st-stamp', root, s.stamp.text), ts = s.at + (s.stamp.t ?? 1.6);
+    st.style.left = Math.round(540 - W / 2 - st.offsetWidth * 0.2) + 'px'; st.style.top = Math.round(ANCHOR_Y + H / 2 - st.offsetHeight * 0.36) + 'px';   // lower-left edge of the button, clear of label and cursor
+    showBetween(st, ts);
+    A(st, { scale: [2.6, 1], opacity: [0, 1] }, { at: ts, dur: .2, ease: EASE.in });
+    A(wrap, { translate: ['0px 0px', '0px 7px', '0px 0px'] }, { at: ts + 0.2, dur: .22 });
+    cue(ts + 0.2, 'stamp');
+  }
+};
+/* merge: a row of labelled steps is struck out and collapses into one circle; a second headline line then appears. */
+S.merge = s => {
+  const root = sceneRoot(s), lines = s.lines || [], after = s.after;
+  const head = storyHead(root, s, after ? lines.concat([after.line]) : lines, after ? lines.length : s.chrome);
+  const els = boxRow(root, s.items || []);
+  const lead = s.lead ?? 0.3, step = s.step ?? 0.22;
+  els.forEach((b, i) => { const a = s.at + lead + i * step; A(b, { opacity: [0, 1], scale: [.6, 1] }, { at: a, dur: .28, ease: EASE.back }); cue(a, 'tick', { i }); });
+  const ts = s.at + (s.strike_at ?? lead + els.length * step + 0.25), tm = s.at + (s.merge_at ?? (ts - s.at) + 0.55);
+  const strike = $('div', 'st-strike', root);
+  A(strike, { scale: ['0 1', '1 1'] }, { at: ts, dur: .34, ease: EASE.io }); cue(ts, 'swish');
+  els.forEach(b => toCentre(b, tm, .36));
+  A(strike, { scale: ['1 1', '0 1'], translate: ['0px 0px', `${strike.offsetWidth / 2}px 0px`], opacity: [1, 0] }, { at: tm, dur: .3, ease: EASE.in });
+  cue(tm - 0.02, 'suck');
+  const one = $('div', 'st-one', root); $('i', '', one); $('b', '', one, s.into || '1');
+  showBetween(one, tm + 0.3);
+  A(one, { scale: [0, 1] }, { at: tm + 0.3, dur: .34, ease: EASE.back }); cue(tm + 0.34, 'ding', { i: 3 });
+  if (after) {
+    const ln = head.children[lines.length], ta = s.at + (after.t ?? (tm - s.at) + 0.7);
+    A(ln, { opacity: [0, 1], translate: ['0 24px', '0 0'], filter: ['blur(12px)', 'blur(0px)'] }, { at: ta, dur: .34 }); cue(ta, 'hit', { i: 1 });
+  }
+};
+/* count: the circle from `merge` stays where it was and counts up; the name of the current step sits right
+   under it, so number and name are read in one place. Each count leaves one more ring behind the circle. */
+S.count = s => {
+  const root = sceneRoot(s), items = s.items || [], n = items.length, end = s.at + s.dur;
+  storyHead(root, s, s.lines || [], s.chrome);
+  const lead = s.lead ?? 0.4, step = s.step ?? 0.58, t0 = s.at + lead, at = i => t0 + i * step;
+  const tOut = s.outro ? s.at + (s.outro.t ?? lead + n * step + 0.05) : Infinity;
+  const tc = s.collapse === false ? Infinity : end - 0.3;
+  const one = $('div', 'st-one', root); $('i', '', one);
+  for (let i = n - 1; i >= 1; i--) { const r = $('u', '', one); showBetween(r, at(i)); A(r, { translate: [`${(i - 1) * 24}px 0px`, `${i * 24}px 0px`] }, { at: at(i), dur: .22 }); }
+  const face = $('b', '', one);
+  const lab = (text, a, b) => { const l = $('div', 'st-lab', root, text); fit(l, 940, 70, 40); showBetween(l, a, b); A(l, { opacity: [0, 1], translate: ['0 14px', '0 0'] }, { at: a, dur: .16 }); return l; };
+  let last = null;
+  items.forEach((x, i) => {
+    const sp = $('span', '', face, String(i + 1));
+    showBetween(sp, i === 0 ? -1 : at(i), i < n - 1 ? at(i + 1) : Infinity);
+    if (i > 0) A(face, { scale: [.84, 1] }, { at: at(i), dur: .22, ease: EASE.back });
+    last = lab(x, at(i), i < n - 1 ? at(i + 1) : tOut);
+    cue(at(i), 'step', { i });
+  });
+  if (s.outro) { last = lab(s.outro.text, tOut, Infinity); cue(tOut, 'hit', { i: 1 }); }
+  if (tc < Infinity) {
+    A(one, { scale: [1, .5], opacity: [1, 0] }, { at: tc, dur: .3, ease: EASE.in });
+    if (last) A(last, { opacity: [1, 0] }, { at: tc, dur: .2, ease: EASE.lin });
+    cue(tc - 0.02, 'suck');
+  }
+};
+
 /* ------------------------------------------------------------------ build */
 for (let i = 0; i < scenes.length; i++) {
   const s = scenes[i];
   if (s.type === 'phone') { const run = [s]; while (scenes[i + 1] && scenes[i + 1].type === 'phone' && !scenes[i + 1].new_phone) run.push(scenes[++i]); phoneRun(run); }
-  else if (S[s.type]) { S[s.type](s); if (s.at > 0 && !['flash', 'offer', 'end', 'bignum', 'slam', 'chaos', 'statement', 'blurtype', 'cut'].includes(s.type)) cue(s.at, 'swish'); }
+  else if (S[s.type]) { S[s.type](s); if (s.at > 0 && !['flash', 'offer', 'end', 'bignum', 'slam', 'chaos', 'statement', 'blurtype', 'cut', 'button', 'merge', 'count'].includes(s.type)) cue(s.at, 'swish'); }
   else console.error('unknown scene type', s.type);
 }
-if (KIN || SPEC.hud) {
+/* The technical HUD is opt-in ("hud": true). Its counters change on every frame in all four corners,
+   which pulls the eye away from the text, and its top-left tag reads as a corner label. */
+if (SPEC.hud === true) {
   const hud = $('div', 'hud', stage); ['tl', 'tr', 'bl', 'br'].forEach(c => $('i', c, hud));
   const a = $('span', '', hud), b = $('span', '', hud), c = $('span', '', hud), d = $('span', '', hud);
   a.style.cssText = 'left:78px;top:152px'; b.style.cssText = 'right:78px;top:152px'; c.style.cssText = 'left:78px;bottom:332px'; d.style.cssText = 'right:78px;bottom:332px';

@@ -196,6 +196,7 @@ MOODS = {
     "bounce": dict(kick=[0, 1.5, 2, 3], hat="16", clap=True, arp=0.30, bass="sync", pad=0.14),
     "deep":   dict(kick=[0, 2], hat="off8", clap=False, arp=0.18, bass="long", pad=0.28),
     "tick":   dict(kick=[0, 1, 2, 3], hat="8", clap=False, arp=0.14, bass="8th", pad=0.16, rim=True),
+    "snap":   dict(kick=[0, 2.5], hat="8", clap=True, arp=0.22, bass="sync", pad=0.18),
 }
 
 
@@ -304,6 +305,14 @@ def build(meta, events, cfg=None):
             place(sfx, whoosh(rng, 0.42), t - 0.16, 0.30, pan)
         elif k == "tap":
             place(sfx, blip(1300, 750, 0.05, 0.012), t, 0.5); place(sfx, noise_tick(rng), t, 0.25)
+        elif k == "click":                                # a mouse button: down, then up
+            place(sfx, noise_tick(rng, 0.004, 1800, 9000), t, 0.5); place(sfx, blip(900, 600, 0.03, 0.008), t, 0.4)
+            place(sfx, noise_tick(rng, 0.004, 2500, 9000), t + 0.075, 0.32)
+        elif k == "stamp":                                # a rubber stamp landing
+            place(sfx, tom(150, 48, 0.3), t, 0.95); place(sfx, lp(rng.standard_normal(int(0.12 * SR)), 1800) * np.exp(-tt(0.12) / 0.03), t, 0.5)
+        elif k == "step":                                 # counting up: one note higher each time
+            scale = (0, 3, 5, 7, 10, 12, 15)
+            place(sfx, bell(midi(root + 36 + scale[i % len(scale)]), 0.5, 0.7), t, 0.34, (i - 2) / 5.0); place(sfx, tom(150, 80, 0.14), t, 0.4)
         elif k == "key":
             place(sfx, noise_tick(rng, 0.006, 2500, 8000), t, 0.16, rng.uniform(-0.3, 0.3))
         elif k == "tick":
