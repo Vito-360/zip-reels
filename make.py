@@ -16,7 +16,8 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "engine"))
 import render, audio  # noqa: E402
 
-SCENE_TYPES = {"phone", "bignum", "flash", "lines", "statement", "cards", "offer", "end", "chaos", "blurtype", "stack", "slam", "cut", "button", "merge", "count"}
+CTA = "Get the free check"
+SCENE_TYPES = {"phone", "bignum", "flash", "lines", "statement", "cards", "offer", "end", "chaos", "blurtype", "stack", "slam", "cut", "button", "merge", "count", "dial", "listings"}
 
 
 def validate(spec):
@@ -34,6 +35,21 @@ def validate(spec):
     for k in ("date", "slug", "style", "pillar", "caption"):
         if not spec.get(k):
             errs.append(f"missing {k}")
+    # one call to action per video, and always the same one (PLAYBOOK section 3a)
+    scenes = spec.get("scenes", [])
+    offers = [s for s in scenes if s.get("type") == "offer"]
+    for s in scenes:
+        if s.get("type") != "end":
+            continue
+        asks = [k for k in ("cta", "question", "line") if s.get(k)]
+        if len(asks) > 1:
+            errs.append(f"end card has {' + '.join(asks)}: use one of them or none")
+        if offers and (s.get("cta") or s.get("question")):
+            errs.append("an offer scene already makes the ask: the end card shows only logo and tagline")
+        if s.get("cta") and s["cta"] != CTA:
+            errs.append(f"the button always reads {CTA!r}")
+    if len(offers) > 1:
+        errs.append("more than one offer scene")
     if errs:
         raise SystemExit("spec problems:\n  " + "\n  ".join(errs))
 

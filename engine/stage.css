@@ -232,6 +232,37 @@ body{font-family:Geist,Inter,system-ui,sans-serif;color:var(--fg);-webkit-font-s
 .st-one b span{position:absolute}
 .st-lab{position:absolute;left:60px;right:60px;top:1156px;text-align:center;font-size:70px;font-weight:600;letter-spacing:-.03em;white-space:nowrap}
 
+/* ---------- listing scenes: a centred headline (bottom edge at y=800) above one object that starts at y=860 ---------- */
+.ls-head{position:absolute;left:60px;right:60px;bottom:1120px;text-align:center;font-weight:700;letter-spacing:-.05em;line-height:.97}
+.ls-head .ln{display:block;white-space:nowrap}
+.ls-head .ln.chrome{padding-bottom:.14em;margin-bottom:-.14em}
+.dl-card{position:absolute;left:80px;right:80px;top:860px;height:270px;border-radius:52px;background:var(--card);border:2px solid #2c2c31;display:flex;align-items:center;gap:46px;padding:0 54px;overflow:hidden}
+.dl-ic{position:relative;flex:none;width:150px;height:150px}
+.dl-ring{position:absolute;inset:0;border-radius:50%;border:3px solid #fafafa}
+.dl-g{position:absolute;inset:0;border-radius:50%;background:#fafafa;color:#000;display:flex;align-items:center;justify-content:center}
+.dl-g svg{width:70px;height:70px;display:block}
+.dl-card.dead .dl-g{background:#26262b;color:#a1a1a9}
+.dl-num{position:relative;width:max-content;font-size:92px;font-weight:700;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.dl-num i{position:absolute;left:-8px;right:-8px;top:50%;height:7px;margin-top:-2px;border-radius:4px;background:#fafafa;transform-origin:0 50%}
+.dl-card.dead .dl-num span{color:var(--fg3)}
+.dl-st{font-size:44px;font-weight:500;color:var(--fg2);margin-top:16px;white-space:nowrap}
+.dl-st.bad{color:#fafafa;font-weight:650}
+.ls-rows{position:absolute;left:70px;right:70px;top:860px;display:flex;flex-direction:column;gap:20px}
+.ls-row{height:128px;border-radius:34px;background:var(--card);border:2px solid #2c2c31;display:flex;align-items:center;justify-content:space-between;padding:0 30px 0 40px}
+.ls-row .nm{font-size:50px;font-weight:650;letter-spacing:-.03em;white-space:nowrap}
+.ls-row .rt{position:relative;display:flex;align-items:center;gap:26px}
+.ls-num{display:flex;font-size:54px;font-weight:600;letter-spacing:-.01em;font-variant-numeric:tabular-nums;color:var(--fg3)}
+.ls-row.ok .ls-num{color:#fafafa}
+.ls-num .d{display:block;height:64px;overflow:hidden}
+.ls-num .col{display:block}
+.ls-num .col b{display:block;height:64px;line-height:64px;font-weight:inherit}
+.ls-num .sp{width:.26em}
+.ls-dot,.ls-ck{flex:none;width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.ls-dot{border:3px solid var(--fg3);color:var(--fg2)}
+.ls-dot svg{width:30px;height:30px}
+.ls-ck{position:absolute;right:0;top:50%;margin-top:-32px;background:var(--lime);opacity:0}
+.ls-ck svg{width:34px;height:34px}
+
 /* ---------- end card ---------- */
 .end-logo{position:absolute;left:210px;top:420px;width:660px}
 .end-logo svg{width:100%;height:auto;display:block;overflow:visible}
@@ -240,6 +271,7 @@ body{font-family:Geist,Inter,system-ui,sans-serif;color:var(--fg);-webkit-font-s
 .end-cta b{display:block;background:var(--lime);color:#000;font-size:56px;font-weight:700;letter-spacing:-.02em;padding:34px 70px 38px;border-radius:90px;box-shadow:0 0 0 2px #c8ff3d55,0 0 90px #c8ff3d44}
 .end-note{top:1310px;font-size:40px;color:#e4e4e8;font-weight:450}
 .end-q{top:1150px;font-size:60px;font-weight:550;letter-spacing:-.025em;line-height:1.18;padding:0 90px;color:#fff}
+.end-q.end-line{color:#e4e4e8}
 
 /* ---------- kinetic style ---------- */
 .kin{font-weight:700;letter-spacing:-.05em;line-height:.88;white-space:nowrap}

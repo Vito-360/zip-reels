@@ -24,7 +24,7 @@ What is committed: the spec in `specs/` and one new row in `LOG.md`.
 3. **Pillar.** Found, Trusted or Booked: the one used least in the last six rows, never the same as the previous row.
 4. **Kind.** Vary between educational (one useful thing), a real-world scenario (a moment a small-business owner recognises), and dry deadpan humour.
 5. **Topic and hook.** Must differ from every row in `LOG.md`: different topic, angle and first line. Check the hook column before writing.
-6. **Ending.** At most two videos per Mon–Fri week end with the free-check CTA (`"cta"` on the end scene). The others end with a concrete question (`"question"`). Seven identical "FREE website check" endings in a row read as ads.
+6. **Ending.** At most two videos per Mon–Fri week carry the free-check call to action. The others end with a concrete question (`"question"`) or with no ask at all: logo, tagline and one closing line (`"line"`). Seven identical "FREE website check" endings in a row read as ads. Section 3a says how the one call to action is shown.
 
 ## 2b. Tied or independent
 
@@ -45,7 +45,7 @@ A viewer who saw yesterday's reel must not feel they are watching it again. Run 
 - **Scene sequence.** Never reuse the same order of scene types or the same phone screens as the previous video of that style. Open with a different kind of scene than the last two videos did.
 - **At least one visual idea not used in the last five videos**: a screen, action, layout or scene type that has not appeared, or a new one you add to the engine (section 7). `specs/_demo-screens.json` shows what exists.
 - **Music.** Different `mood`, `seed` and `bpm` than the previous two rows.
-- **Ending.** Different end-card question than any before; CTA wording may repeat.
+- **Ending.** Different end-card question or closing line than any before. The call to action is the one thing that never varies (section 3a).
 
 Same brand, new video: the colours, type and logo stay; everything else moves.
 
@@ -59,8 +59,16 @@ Same brand, new video: the colours, type and logo stay; everything else moves.
 - Do not claim experience zip does not have yet ("mistakes we see in almost every check").
 - Mock screens show generic businesses ("Your business", "Your competitor"). No real company names or logos, no real Google interface copied; "Google" as a word is fine.
 - Caption: 3–6 short paragraphs, no emoji spam, no hashtag wall, ends with a concrete question or a soft CTA ("link in bio").
-- CTA wording: "Get the free check" + "link in bio · donebyzip.com". The address alone is not clickable in an organic reel.
+- "link in bio" belongs in the caption, next to the free check. It is not shown on the video.
 - **No pillar label in a corner.** Never show "Found", "Trusted", "Booked" or "Found / Trusted / Booked" as a label, tag or HUD text in any corner of the video or the cover. The words may appear inside the content itself (a headline, a callout, the scene) when the video is about them. The technical HUD of the kinetic style is off by default for the same reason (`"hud": true` turns it on; do not use it for published videos).
+
+## 3a. One call to action, always the same one
+
+- **At most one ask per video.** Never two, never in consecutive scenes. If an `offer` scene ("FREE check") makes the offer, the end card shows only the logo and the tagline: no button, no question. If the end card carries the ask, no earlier scene does.
+- **The ask is always the free check**, worded "Get the free check" on the end-card button (`"cta"`), or "FREE check" as the offer scene, in lime `#C8FF3D` with black text. Do not invent other asks ("DM us", "Book a call", "Follow for more", "link in bio") and do not rephrase it from video to video.
+- **A question on the end card counts as an ask**, so it never appears together with the button. The end card takes exactly one of `cta`, `question`, `line`, or none of them.
+- **No address line under the button.** `"note"` exists but stays unused; the button stands alone.
+- `make.py` refuses a spec that breaks these rules. Check the sheet for it as well.
 
 ## 4. Design rules (already built into the engine, do not fight them)
 
@@ -82,7 +90,7 @@ Every video is built around where the viewer's eyes go. From eye-tracking resear
 5. **Cover.** Same logic as a still: the main text in the upper-centre area as one block.
 6. **Check.** On the sheet, say for each scene where the eye lands first and where it goes next. Fix any scene where the first look lands on something unimportant. Put the eye path in one line in the summary.
 
-The story scenes (`button`, `merge`, `count`) are built on this: a centred headline whose bottom edge is at y=900 and one object centred on y=1040, in the same place in every scene.
+The story scenes (`button`, `merge`, `count`) are built on this: a centred headline whose bottom edge is at y=900 and one object centred on y=1040, in the same place in every scene. The listing scenes (`dial`, `listings`) do the same one step higher: headline bottom edge at y=800, the call card or the first row starting at y=860.
 
 ## 5. Write the spec
 
@@ -100,9 +108,9 @@ Copy the closest existing spec in `specs/` and change it. Minimal shape:
 ```
 
 - Scenes play in order. Each needs `type` and `dur`; durations must add up to 15.
-- Mark the scene where the video turns from problem to solution with `"turn": true`. The beat gets fuller there.
+- Mark the scene where the video turns from problem to solution with `"turn": true`. The beat gets fuller there. When the turn happens inside a scene, add `"turn_at": <seconds from the scene start>`.
 - Voice-over: `"say": "..."` on a scene (starts 0.15 s in), or `"says": [{"t": 3.1, "text": "..."}]` for several lines in one scene. See section 5a for what the voice may and may not say.
-- Change `audio.seed`, `mood` (`pulse`, `bounce`, `deep`, `tick`, `snap`) and `bpm` (104–128) every day so the music differs (key, pattern, tempo and feel). Add a new mood to `MOODS` in `engine/audio.py` when the last videos have used them all.
+- Change `audio.seed`, `mood` (`pulse`, `bounce`, `deep`, `tick`, `snap`, `shuffle`) and `bpm` (104–128) every day so the music differs (key, pattern, tempo and feel). Add a new mood to `MOODS` in `engine/audio.py` when the last videos have used them all.
 - Optional: `"tied": "<design title>"` (section 2b), `"cover_at": <seconds>` (frame used for the cover, default 0).
 - `style: "kinetic"` gives hard cuts on plain black; the other two styles fade between scenes over a faint grid.
 
@@ -129,7 +137,7 @@ The voice is a person reacting to what is on screen. It is not a narrator readin
 | `statement` | big 1–3 line statement | `lines`, `chrome` (index of the chrome line), `sub` |
 | `cards` | up to three dark cards with a small widget | `kicker`, `cards` `[{title, sub, widget}]`, `checks` |
 | `offer` | lime "FREE" pill | `pill`, `title`, `list` or `sub` |
-| `end` | logo, tagline, then CTA or question | `tagline`, `cta` + `note`, or `question` |
+| `end` | logo, tagline, then at most one of: the button, a question, a closing line | `tagline`, and one of `cta` ("Get the free check"), `question`, `line`, or none (section 3a) |
 | `chaos` | kinetic: huge words slam in over drifting ghost words | `main`, `ghosts`, `seed` |
 | `blurtype` | kinetic: lines resolve from a blur | `lines`, `chrome`, `stripes`, `sub` |
 | `stack` | kinetic: list on a rail | `items`, `kicker`, `collapse` |
@@ -138,6 +146,8 @@ The voice is a person reacting to what is on screen. It is not a narrator readin
 | `button` | story: centred headline over one pill button that gets clicked (mouse cursor) or tapped (finger) | `lines`, `chrome` (line index), `label`, `label_done`, `check` (lime check when done), `pointer` (`cursor`/`tap`), `press_at`, `stamp` `{t, text}` |
 | `merge` | story: a row of labelled steps is struck out and collapses into one circle, then a second headline line appears | `lines`, `after` `{t, line}`, `items`, `lead`, `step`, `strike_at`, `merge_at`, `into` |
 | `count` | story: the circle counts up in place, the name of the current step under it, one more ring behind it per count | `lines`, `items`, `lead`, `step`, `outro` `{t, text}`, `collapse` |
+| `dial` | listing: centred headline over one call card (handset with rings, number, status); at `fail_at` the number is struck out, the status changes and the card shakes | `lines`, `chrome`, `number`, `status`, `status_fail`, `fail_at` |
+| `listings` | listing: centred headline over up to three rows (a place and the value shown there, grey with a cross); from `fix.t` the rows are corrected one at a time: the digits that differ roll to the new value and a lime check replaces the cross | `lines`, `retitle` `{t, lines, chrome}`, `value`, `rows` `[{name, value, to}]`, `lead`, `step`, `fix` `{t, value, step}` |
 
 Consecutive `phone` scenes share one phone; the screen changes inside it. With `labels`, the phone moves left and the labels appear on the right.
 
@@ -176,6 +186,7 @@ Look at `out/<date>-<slug>-sheet.jpg` (open the image) and fix the spec until:
 
 - frame 1 shows the complete hook, sharp, at centre or slightly above it
 - no pillar label or other text sits in a corner
+- there is at most one call to action (section 3a): no offer scene followed by a button, no question next to a button
 - the eye path works in every scene (section 4a)
 - no text is cut off, overlapping, or below the safe area
 - every line stays on screen long enough to read
@@ -195,7 +206,7 @@ Nobody in the pipeline can hear the audio. Say that plainly in the summary every
 1. Add a row to `LOG.md`.
 2. Commit `specs/<date>.json` and `LOG.md` to `main` and push.
 3. Send the files to the user: both MP4s and the cover.
-4. Reply in **Croatian** with a short summary: day and date and whether the video is tied (to which post) or independent, style, pillar (only if the video is built on it), topic, hook, the eye path in one line, what is visually new, how it ends, the voice-over script, the caption (English), and anything that could not be done or checked.
+4. Reply in **Croatian** with a short summary: day and date and whether the video is tied (to which post) or independent, style, pillar (only if the video is built on it), topic, hook, the eye path in one line, where the single call to action sits (or that the video has none), what is visually new, how it ends, the voice-over script, the caption (English), and anything that could not be done or checked.
 
 Never post to Instagram. These are drafts for the team.
 

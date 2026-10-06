@@ -197,6 +197,7 @@ MOODS = {
     "deep":   dict(kick=[0, 2], hat="off8", clap=False, arp=0.18, bass="long", pad=0.28),
     "tick":   dict(kick=[0, 1, 2, 3], hat="8", clap=False, arp=0.14, bass="8th", pad=0.16, rim=True),
     "snap":   dict(kick=[0, 2.5], hat="8", clap=True, arp=0.22, bass="sync", pad=0.18),
+    "shuffle": dict(kick=[0, 2, 2.75], hat="16", clap=False, arp=0.20, bass="sync", pad=0.22, rim=True, swing=0.34),
 }
 
 
@@ -256,7 +257,7 @@ def build(meta, events, cfg=None):
             if t < end - 1e-6:
                 place(drums, kick(), t, 0.95); kicks.append(t)
         for q in range(16):
-            t = tb + q * beat / 4
+            t = tb + (q + (mood.get("swing", 0) if q % 2 else 0)) * beat / 4    # swing: every second 16th arrives late
             if t >= end - 1e-6:
                 break
             h = mood["hat"]

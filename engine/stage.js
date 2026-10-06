@@ -416,12 +416,13 @@ S.end = s => {
   cue(s.at, 'logo');
   const tag = $('div', 'center end-tag', root, s.tagline || 'systems that sell.');
   A(tag, { opacity: [0, 1], translate: ['0 30px', '0 0'] }, { at: s.at + .35, dur: .5 });
+  /* One ask at most: the button, or a question, or a plain closing line, or nothing (logo and tagline only). */
   if (s.cta) {
     const c = $('div', 'center end-cta', root); const b = $('b', '', c, s.cta);
     A(b, { opacity: [0, 1], scale: [.8, 1] }, { at: s.at + .75, dur: .45, ease: EASE.back }); cue(s.at + .75, 'ding', { i: 2 });
-    const n = $('div', 'center end-note', root, s.note || 'link in bio · donebyzip.com'); A(n, { opacity: [0, 1] }, { at: s.at + 1.0, dur: .4 });
-  } else if (s.question) {
-    const q = $('div', 'center end-q', root, s.question); A(q, { opacity: [0, 1], translate: ['0 30px', '0 0'] }, { at: s.at + .75, dur: .5 }); cue(s.at + .75, 'swish');
+    if (s.note) { const n = $('div', 'center end-note', root, s.note); A(n, { opacity: [0, 1] }, { at: s.at + 1.0, dur: .4 }); }
+  } else if (s.question || s.line) {
+    const q = $('div', 'center end-q' + (s.line ? ' end-line' : ''), root, s.question || s.line); A(q, { opacity: [0, 1], translate: ['0 30px', '0 0'] }, { at: s.at + .75, dur: .5 }); cue(s.at + .75, 'swish');
   }
 };
 
@@ -603,11 +604,98 @@ S.count = s => {
   }
 };
 
+/* ------------------------------------------------------------------ listing scenes
+   Shared layout: a centred headline whose bottom edge sits at y=800 and the object right under it, starting
+   at y=860. `dial` puts one call card there, `listings` puts its first row there, so the eye stays put
+   across the cut. The headline is complete and sharp on the scene's first frame. */
+const HANDSET = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+const CROSS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>';
+function lsHead(root, s, lines, chrome, t0, t1) {
+  const el = $('div', 'ls-head', root);
+  lines.forEach((l, i) => { const ln = $('span', 'ln', el, l); if (chrome === i) ln.classList.add('chrome'); });
+  fit(el, 940, s.size || 140, 70);
+  if (t0 != null) {
+    showBetween(el, t0, t1 ?? Infinity);
+    if (t0 > s.at) { [...el.children].forEach((ln, k) => A(ln, { opacity: [0, 1], translate: ['0 26px', '0 0'], filter: ['blur(12px)', 'blur(0px)'] }, { at: t0 + k * 0.08, dur: .32 })); cue(t0, 'slam'); }
+    if (t1 != null) A(el, { opacity: [1, 0] }, { at: t1 - 0.1, dur: 0.1, ease: EASE.lin });
+  }
+  return el;
+}
+/* dial: headline + one call card. The handset rings ("calling…"); at fail_at the number is struck out, the
+   status changes and the card shakes. Without fail_at the call simply keeps ringing. */
+S.dial = s => {
+  const root = sceneRoot(s);
+  lsHead(root, s, s.lines || [], s.chrome);
+  if (s.at > 0) cue(s.at, 'swish'); else cue(0, 'hit');
+  const card = $('div', 'dl-card', root);
+  const tf = s.fail_at != null ? s.at + s.fail_at : Infinity, end = s.at + s.dur;
+  const ic = $('div', 'dl-ic', card);
+  for (let k = 0; k < 2; k++) {
+    const r = $('div', 'dl-ring', ic);
+    A(r, { scale: [1, 1.62], opacity: [.8, 0] }, { at: s.at - 0.9 + k * 0.6, dur: 1.2, ease: EASE.lin, iter: Infinity });
+    showBetween(r, -1, tf);
+  }
+  const on = $('div', 'dl-g', ic); on.innerHTML = HANDSET;
+  const tx = $('div', 'dl-tx', card);
+  const num = $('div', 'dl-num', tx); $('span', '', num, s.number || '098 000 111'); const strike = $('i', '', num);
+  const st1 = $('div', 'dl-st', tx, s.status || 'calling…'), st2 = $('div', 'dl-st bad', tx, s.status_fail || 'not in service');
+  showBetween(st1, -1, tf); showBetween(st2, tf);
+  if (s.at > 0) A(card, { opacity: [0, 1], translate: ['0px 40px', '0px 0px'] }, { at: s.at + 0.05, dur: .4 });
+  for (let t = s.at + 0.12; t < Math.min(tf, end) - 0.7; t += 1.05) cue(t, 'ring');
+  if (tf < Infinity) {
+    classAt(card, 'dead', tf);
+    A(on, { rotate: ['0deg', '135deg'] }, { at: tf, dur: .3, ease: EASE.back });
+    A(strike, { scale: ['0 1', '1 1'] }, { at: tf + 0.04, dur: .26, ease: EASE.io });
+    A(card, { translate: ['0px 0px', '-16px 0px', '13px 0px', '-8px 0px', '0px 0px'] }, { at: tf, dur: .34, ease: EASE.lin });
+    A(st2, { opacity: [0, 1], translate: ['0 12px', '0 0'] }, { at: tf, dur: .22 });
+    cue(tf, 'error'); cue(tf + 0.04, 'hit', { i: 1 });
+  }
+};
+/* listings: headline + up to three rows (a place and the value shown there). Every row starts with the old
+   value and a grey cross. From fix.t the rows are corrected one at a time: the digits that differ roll to
+   the new value and a lime check replaces the cross. `retitle` swaps the headline (usually at the turn). */
+S.listings = s => {
+  const root = sceneRoot(s), rows = s.rows || [], fix = s.fix || null, CELL = 64;
+  const re = s.retitle || null, tr = re ? s.at + re.t : null;
+  lsHead(root, s, s.lines || [], s.chrome, re ? s.at : null, tr);
+  if (re) lsHead(root, s, re.lines, re.chrome, tr, null);
+  cue(s.at, s.at === 0 ? 'hit' : 'swish');
+  const box = $('div', 'ls-rows', root);
+  const lead = s.lead ?? 0.35, step = s.step ?? 0.45;
+  rows.forEach((r, i) => {
+    const row = $('div', 'ls-row', box), a = s.at + lead + i * step;
+    $('span', 'nm', row, r.name);
+    const right = $('div', 'rt', row), num = $('div', 'ls-num', right);
+    const from = String(r.value ?? s.value ?? ''), to = String((fix && (r.to ?? fix.value)) ?? from);
+    const tfix = fix ? s.at + fix.t + i * (fix.step ?? 0.55) : Infinity, rolls = [];
+    [...from.padEnd(to.length)].forEach((ch, k) => {
+      const nw = to[k] ?? ch;
+      if (ch === ' ' && nw === ' ') { $('span', 'sp', num); return; }
+      const cell = $('span', 'd', num), col = $('span', 'col', cell);
+      if (nw === ch) { $('b', '', col, ch); return; }
+      const mid = /\d/.test(ch) && /\d/.test(nw) ? String((+ch + +nw + 5) % 10) : nw;
+      [ch, mid, nw].forEach(x => $('b', '', col, x)); rolls.push(col);
+    });
+    const dot = $('div', 'ls-dot', right); dot.innerHTML = CROSS;
+    const ck = $('div', 'ls-ck', right); ck.innerHTML = CHECK;
+    if (s.at > 0 || i > 0 || lead > 0.05) { A(row, { opacity: [0, 1], translate: ['0px 44px', '0px 0px'] }, { at: a, dur: .36 }); cue(a, 'tick', { i }); }
+    if (tfix < Infinity) {
+      rolls.forEach((col, k) => A(col, { translate: ['0px 0px', `0px ${-2 * CELL}px`] }, { at: tfix + k * 0.05, dur: .42, ease: EASE.io }));
+      const done = tfix + 0.34 + rolls.length * 0.05;
+      classAt(row, 'ok', tfix + 0.2);
+      A(row, { scale: [1, 1.025, 1] }, { at: tfix, dur: .5 });
+      A(ck, { scale: [0, 1], opacity: [0, 1] }, { at: done, dur: .3, ease: EASE.back });
+      for (let k = 0; k < 3; k++) cue(tfix + k * 0.09, 'key');
+      cue(done, 'ding', { i });
+    }
+  });
+};
+
 /* ------------------------------------------------------------------ build */
 for (let i = 0; i < scenes.length; i++) {
   const s = scenes[i];
   if (s.type === 'phone') { const run = [s]; while (scenes[i + 1] && scenes[i + 1].type === 'phone' && !scenes[i + 1].new_phone) run.push(scenes[++i]); phoneRun(run); }
-  else if (S[s.type]) { S[s.type](s); if (s.at > 0 && !['flash', 'offer', 'end', 'bignum', 'slam', 'chaos', 'statement', 'blurtype', 'cut', 'button', 'merge', 'count'].includes(s.type)) cue(s.at, 'swish'); }
+  else if (S[s.type]) { S[s.type](s); if (s.at > 0 && !['flash', 'offer', 'end', 'bignum', 'slam', 'chaos', 'statement', 'blurtype', 'cut', 'button', 'merge', 'count', 'dial', 'listings'].includes(s.type)) cue(s.at, 'swish'); }
   else console.error('unknown scene type', s.type);
 }
 /* The technical HUD is opt-in ("hud": true). Its counters change on every frame in all four corners,
@@ -627,7 +715,7 @@ if (SPEC.hud === true) {
 }
 
 const turn = scenes.find(s => s.turn), endScene = scenes.find(s => s.type === 'end');
-window.__meta = { duration: DUR, drop: (SPEC.audio && SPEC.audio.drop_at) ?? (turn ? turn.at : DUR * 0.45), end: endScene ? endScene.at : DUR - 2,
+window.__meta = { duration: DUR, drop: (SPEC.audio && SPEC.audio.drop_at) ?? (turn ? turn.at + (turn.turn_at || 0) : DUR * 0.45), end: endScene ? endScene.at : DUR - 2,
   says: (() => { const out = []; scenes.forEach(s => { if (s.say) out.push({ t: s.at + (s.say_at ?? 0.15), text: s.say, until: s.at + s.dur }); (s.says || []).forEach(x => out.push({ t: s.at + x.t, text: x.text, until: s.at + s.dur })); });
     out.sort((x, y) => x.t - y.t); out.forEach((o, i) => { if (out[i + 1]) o.until = Math.min(Math.max(o.until, o.t + 0.5), out[i + 1].t - 0.05); else o.until = DUR - 0.1; }); return out; })() };
 window.__events = TL.events.sort((x, y) => x.t - y.t);

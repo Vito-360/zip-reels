@@ -1,0 +1,87 @@
+{
+ "date": "2026-10-12",
+ "slug": "the-old-number",
+ "style": "cards",
+ "pillar": "found",
+ "ending": "cta",
+ "topic": "An old phone number that is still shown on Google, social pages and directories: a customer calls it, hears 'not in service' and moves on. Fix: the same current number on every listing.",
+ "duration": 15,
+ "audio": {
+  "bpm": 108,
+  "mood": "shuffle",
+  "seed": 30
+ },
+ "scenes": [
+  {
+   "type": "dial",
+   "dur": 4.2,
+   "lines": [
+    "your old number",
+    "is still online."
+   ],
+   "number": "098 000 111",
+   "status": "calling…",
+   "status_fail": "not in service",
+   "fail_at": 2.3,
+   "says": [
+    {
+     "t": 0.2,
+     "text": "A customer is calling you right now!"
+    },
+    {
+     "t": 2.65,
+     "text": "And nobody picks up!"
+    }
+   ]
+  },
+  {
+   "type": "listings",
+   "dur": 7.2,
+   "turn": true,
+   "turn_at": 3.2,
+   "lines": [
+    "not just",
+    "in one place."
+   ],
+   "retitle": {
+    "t": 3.2,
+    "lines": [
+     "one number.",
+     "everywhere."
+    ],
+    "chrome": 1
+   },
+   "value": "098 000 111",
+   "rows": [
+    {
+     "name": "Google"
+    },
+    {
+     "name": "Social media"
+    },
+    {
+     "name": "Directories"
+    }
+   ],
+   "fix": {
+    "t": 3.8,
+    "value": "098 000 222",
+    "step": 0.6
+   },
+   "says": [
+    {
+     "t": 3.3,
+     "text": "Update them all, and the phone rings again!"
+    }
+   ]
+  },
+  {
+   "type": "end",
+   "dur": 3.6,
+   "tagline": "systems that sell.",
+   "cta": "Get the free check",
+   "say": "Want a second pair of eyes? It's free!"
+  }
+ ],
+ "caption": "You changed your phone number years ago. Or someone typed it wrong once. Either way, the old one is still sitting on a page you forgot about.\n\nA customer finds it, calls, and hears \"not in service\". They don't go looking for the right number. They call the next business on the list.\n\nCheck three places today: your Google profile, your social pages, and any directory you ever signed up for. The same number on all of them, and the same hours and address while you're there.\n\nYou don't need a website to do this. You only need to know where you're listed.\n\nWant to know what else a customer runs into? Get the free check: three findings, in writing. Link in bio."
+}
