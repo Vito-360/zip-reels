@@ -1,0 +1,147 @@
+{
+ "date": "2026-10-13",
+ "slug": "the-unanswered-review",
+ "style": "phone",
+ "pillar": "trusted",
+ "ending": "line",
+ "topic": "A bad review that the owner never answered. It gets older, strangers read it and then read the silence under it. Fix: a short, calm reply, written for the next person who reads it.",
+ "duration": 15,
+ "audio": {
+  "bpm": 116,
+  "mood": "glide",
+  "seed": 41
+ },
+ "scenes": [
+  {
+   "type": "phone",
+   "dur": 4.0,
+   "title": [
+    "the review",
+    "you never answered."
+   ],
+   "screen": {
+    "kind": "reviews",
+    "name": "Your business",
+    "stars": 4,
+    "meta": "reviews",
+    "review": {
+     "name": "Ana",
+     "stars": 1,
+     "age": "2 days ago",
+     "text": "Waited 40 minutes. Nobody said sorry."
+    },
+    "empty": "No reply yet"
+   },
+   "actions": [
+    {
+     "t": 1.5,
+     "do": "age",
+     "on": "age",
+     "text": "3 weeks ago"
+    },
+    {
+     "t": 2.1,
+     "do": "age",
+     "on": "age",
+     "text": "5 months ago"
+    },
+    {
+     "t": 2.7,
+     "do": "age",
+     "on": "age",
+     "text": "2 years ago",
+     "bad": true
+    }
+   ],
+   "says": [
+    {
+     "t": 0.2,
+     "text": "Ouch! And nobody ever wrote back?"
+    }
+   ]
+  },
+  {
+   "type": "phone",
+   "dur": 3.4,
+   "keep_screen": true,
+   "labels_top": 770,
+   "labels": [
+    {
+     "t": 0.7,
+     "text": "strangers",
+     "sub": "read this before they call"
+    },
+    {
+     "t": 2.0,
+     "text": "silence",
+     "sub": "is what they read next"
+    }
+   ],
+   "actions": [
+    {
+     "t": 0.7,
+     "do": "highlight",
+     "on": "review"
+    },
+    {
+     "t": 2.0,
+     "do": "flag",
+     "on": "slot"
+    }
+   ],
+   "says": [
+    {
+     "t": 0.5,
+     "text": "People looking you up can see that!"
+    }
+   ]
+  },
+  {
+   "type": "phone",
+   "dur": 4.8,
+   "turn": true,
+   "keep_screen": true,
+   "retitle": [
+    {
+     "t": 3.0,
+     "lines": [
+      "now they read",
+      "your answer."
+     ]
+    }
+   ],
+   "actions": [
+    {
+     "t": 0.9,
+     "do": "type",
+     "on": "slot",
+     "text": "You're right. We're sorry.\nWe fixed it.",
+     "dur": 1.4
+    },
+    {
+     "t": 2.5,
+     "do": "fix",
+     "on": "slot",
+     "i": 2
+    }
+   ],
+   "says": [
+    {
+     "t": 0.3,
+     "text": "Write back! Kind, short, done."
+    },
+    {
+     "t": 3.1,
+     "text": "Now that's what people see!"
+    }
+   ]
+  },
+  {
+   "type": "end",
+   "dur": 2.8,
+   "tagline": "systems that sell.",
+   "line": "Silence is an answer too."
+  }
+ ],
+ "caption": "There's a review on your profile that you never answered. Maybe it was unfair. Maybe it was just a bad day. Either way, it's still there.\n\nPeople who look you up read it. Then they look underneath to see what you said. If there's nothing, the review gets the last word.\n\nSo answer it, even if it's old. Two or three calm sentences: say sorry for what went wrong and say what you changed. Don't argue and don't explain for a whole paragraph.\n\nYou're not writing to the person who left it. You're writing to the next person who reads it.\n\nThis works with or without a website. A Google profile is enough.\n\nWhen did you last reply to a review?"
+}

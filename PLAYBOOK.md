@@ -110,7 +110,7 @@ Copy the closest existing spec in `specs/` and change it. Minimal shape:
 - Scenes play in order. Each needs `type` and `dur`; durations must add up to 15.
 - Mark the scene where the video turns from problem to solution with `"turn": true`. The beat gets fuller there. When the turn happens inside a scene, add `"turn_at": <seconds from the scene start>`.
 - Voice-over: `"say": "..."` on a scene (starts 0.15 s in), or `"says": [{"t": 3.1, "text": "..."}]` for several lines in one scene. See section 5a for what the voice may and may not say.
-- Change `audio.seed`, `mood` (`pulse`, `bounce`, `deep`, `tick`, `snap`, `shuffle`) and `bpm` (104–128) every day so the music differs (key, pattern, tempo and feel). Add a new mood to `MOODS` in `engine/audio.py` when the last videos have used them all.
+- Change `audio.seed`, `mood` (`pulse`, `bounce`, `deep`, `tick`, `snap`, `shuffle`, `glide`) and `bpm` (104–128) every day so the music differs (key, pattern, tempo and feel). Add a new mood to `MOODS` in `engine/audio.py` when the last videos have used them all.
 - Optional: `"tied": "<design title>"` (section 2b), `"cover_at": <seconds>` (frame used for the cover, default 0).
 - `style: "kinetic"` gives hard cuts on plain black; the other two styles fade between scenes over a faint grid.
 
@@ -130,7 +130,7 @@ The voice is a person reacting to what is on screen. It is not a narrator readin
 
 | type | use | main fields |
 |---|---|---|
-| `phone` | a phone with a screen, headline above | `title` (2 lines), `retitle` `[{t, lines}]`, `screen`, `actions`, `labels` `[{t, text, sub}]` |
+| `phone` | a phone with a screen, headline above | `title` (2 lines), `retitle` `[{t, lines}]`, `screen`, `actions`, `labels` `[{t, text, sub}]`, `labels_top` (y of the first label, default 650), `keep_screen` |
 | `bignum` | giant chrome number or year | `label`, `values` (list, steps through them), `step`, `word`, `bar` |
 | `flash` | white full-screen beat | `lines` |
 | `lines` | statements one by one, earlier ones dim | `lines`, `kicker`, `step`, `numbered` |
@@ -149,7 +149,7 @@ The voice is a person reacting to what is on screen. It is not a narrator readin
 | `dial` | listing: centred headline over one call card (handset with rings, number, status); at `fail_at` the number is struck out, the status changes and the card shakes | `lines`, `chrome`, `number`, `status`, `status_fail`, `fail_at` |
 | `listings` | listing: centred headline over up to three rows (a place and the value shown there, grey with a cross); from `fix.t` the rows are corrected one at a time: the digits that differ roll to the new value and a lime check replaces the cross | `lines`, `retitle` `{t, lines, chrome}`, `value`, `rows` `[{name, value, to}]`, `lead`, `step`, `fix` `{t, value, step}` |
 
-Consecutive `phone` scenes share one phone; the screen changes inside it. With `labels`, the phone moves left and the labels appear on the right.
+Consecutive `phone` scenes share one phone; the screen changes inside it. With `labels`, the phone moves left and the labels appear on the right (set `labels_top` so each label sits beside the thing it names). `"keep_screen": true` on a phone scene keeps the previous scene's screen exactly as it is, state included, instead of loading a new one: use it when one screen carries the story through several scenes (new headline, labels, the turn). Such a scene takes no `screen`; its actions use the kept screen's keys. A phone scene may have no `title` at all; a `retitle` can then bring the headline in after the action on the screen has finished, so only one thing moves at a time.
 
 ### Phone screens (`screen.kind`)
 
@@ -163,10 +163,11 @@ Consecutive `phone` scenes share one phone; the screen changes inside it. With `
 | `listing` | `name`, `category`, `stars`, `meta`, `photos`, `rows [{k, v, bad, fix}]` | `row0`…, `photos` |
 | `loading` | `url`, `rate`, `count_to`, `caption` | – |
 | `form` | `title`, `fields`, `submit`, `submit_done`, `counter` (chip "1 of 11" that counts typed fields), `short` (large friendly form, dark full-width button), `extras` (small lines under the button) | `f0`, `f1`… , `submit` |
+| `reviews` | `name`, `stars`, `meta`, `review {name, stars, age, text}` (the one review the video is about), `empty` (text in the empty owner's-reply slot), `more` (dimmed reviews below, default 2) | `review`, `age`, `slot` |
 
 ### Actions (`actions: [{t, do, on}]`, `t` is seconds from the scene start)
 
-`tap` (add `"miss": true` for a missed tap), `highlight`, `flag` (mark red), `promote` (move a search result to the top with a #1 badge), `zoom` (`to`), `scroll` (`by`, `dur`), `press` (tap a button and switch it to its done state), `fix` (turn a bad listing row or the photos good), `type` (`text`, `dur`: types into a form field), `leave` (the screen slides away). Use `on` with a key from the table, or `x`/`y` from 0 to 1 on the screen.
+`tap` (add `"miss": true` for a missed tap), `highlight`, `flag` (mark red), `promote` (move a search result to the top with a #1 badge), `zoom` (`to`), `scroll` (`by`, `dur`), `press` (tap a button and switch it to its done state), `fix` (turn a bad listing row or the photos good), `type` (`text`, `dur`: types into a form field, or the owner's reply into the `slot` of a `reviews` screen; `\n` breaks the line), `age` (`text`, `bad`: rolls the age pill of a review forward, e.g. "2 days ago" → "2 years ago"; `bad` turns it red), `leave` (the screen slides away). On a `reviews` screen, `highlight` frames the review, `flag` turns the empty reply slot red and `fix` puts a lime check on the written reply. Use `on` with a key from the table, or `x`/`y` from 0 to 1 on the screen.
 
 `specs/_demo-screens.json` uses every screen and most actions. Use it as a reference; do not publish it.
 

@@ -208,6 +208,32 @@ SCR.form = (scr, d) => {
   return { keys, inner, fills };
 };
 
+/* reviews: a business's review list. The first review is the subject: a low rating, an age pill that
+   the `age` action rolls forward, and under it the owner's reply slot (empty, then `flag`, `type`, `fix`). */
+SCR.reviews = (scr, d) => {
+  const inner = $('div', 'inner', scr), keys = {};
+  $('div', 'li-nm', inner, d.name || 'Your business');
+  metaRow(inner, d.stars == null ? 4 : d.stars, d.meta || 'reviews');
+  const r = d.review || {};
+  const card = $('div', 'rv-card', inner); keys.review = card;
+  const head = $('div', 'rv-head', card);
+  $('div', 'rv-av', head, r.initial || (r.name || 'A')[0]);
+  $('div', 'rv-nm', head, r.name || 'Ana');
+  const age = $('div', 'rv-age' + (r.age_bad ? ' bad' : ''), head); age._val = $('span', '', age, r.age || '2 days ago'); keys.age = age;
+  $('div', 'stars rv-stars', card, starStr(r.stars == null ? 1 : r.stars));
+  $('div', 'rv-text', card, r.text || '');
+  const slot = $('div', 'rv-slot', inner); keys.slot = slot;
+  const top = $('div', 'rv-slot-top', slot); $('span', '', top, d.reply_label || "Owner's reply");
+  const ck = $('i', 'rv-ck', top); ck.innerHTML = CHECK;
+  $('div', 'rv-ph', slot, d.empty || 'No reply yet');
+  slot._val = $('div', 'rv-reply', slot, '');
+  for (let k = 0; k < (d.more ?? 2); k++) {
+    const c = $('div', 'rv-card rv-dim', inner), h = $('div', 'rv-head', c); $('div', 'rv-av', h); $('div', 'sk', h).style.cssText = 'width:150px;margin-top:0';
+    $('div', 'stars rv-stars', c, starStr(5)); $('div', 'sk', c); $('div', 'sk s', c);
+  }
+  return { keys, inner };
+};
+
 function centerIn(el, scr) { let x = el.offsetWidth / 2, y = el.offsetHeight / 2, n = el; while (n && n !== scr) { x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent; } return [x, y]; }
 function tapAt(scr, [x, y], t, miss) {
   const d = $('div', 'tap' + (miss ? ' miss' : ''), scr); d.style.left = x + 'px'; d.style.top = y + 'px';
@@ -233,6 +259,13 @@ function act(scr, api, a, s) {
       for (let k = 0; k < full.length; k += 2) cue(t + du * k / full.length, 'key');
       if (api.fills) api.fills.push(t + du);
       break;
+    }
+    case 'age': {                                       // roll an age pill forward ("2 days ago" -> "2 years ago")
+      const sp = el._val || el;
+      if (!el._steps) { el._steps = []; const base = sp.textContent, bad0 = el.classList.contains('bad');
+        tick(tm => { let x = base, bad = bad0; el._steps.forEach(st => { if (tm >= st.t - 1e-6) { x = st.text; bad = !!st.bad; } }); sp.textContent = x; el.classList.toggle('bad', bad); }); }
+      el._steps.push({ t, text: a.text, bad: a.bad }); el._steps.sort((p, q) => p.t - q.t);
+      A(el, { scale: [1, 1.24, 1], offset: [0, .3, 1] }, { at: t, dur: .34, ease: EASE.lin }); cue(t, a.bad ? 'hit' : 'tock'); break;
     }
     case 'leave': A(scr, { translate: ['0 0', '112% 0'] }, { at: t, dur: .45, ease: EASE.in }); cue(t, 'whoosh'); break;
     case 'promote': {
@@ -266,20 +299,29 @@ function phoneRun(run) {
   A(rig, { opacity: [0, 1], translate: ['0px 240px', '0px 0px'], scale: [.94, 1] }, { at: startOf(first) - (t0 === 0 ? 0.25 : 0), dur: .8 });
   if (t0 > 0) cue(t0, 'whoosh');
   let pose = 'center';
-  const labels = $('div', 'labels', root); let labN = 0;
+  const labels = $('div', 'labels', root); let labN = 0, held = null;
   run.forEach((s, i) => {
-    const d = s.screen || { kind: 'search' };
+    const d = s.screen || (s.keep_screen && held ? {} : { kind: 'search' });
+    if (s.labels_top) labels.style.top = s.labels_top + 'px';
     const titles = (s.title ? [{ t: 0, lines: s.title }] : []).concat(s.retitle || []);
     titles.forEach((tt, k) => { const a = s.at + tt.t, b = k < titles.length - 1 ? s.at + titles[k + 1].t : s.at + s.dur; titleEl(root, tt.lines, a, b, a === 0); if (a > 0) cue(a, 'swish'); });
-    const scr = $('div', 'screen scr-' + d.kind, glass);
-    const api = (SCR[d.kind] || SCR.search)(scr, d, s);
-    if (i > 0) { A(scr, { opacity: [0, 1], translate: ['0px 46px', '0px 0px'] }, { at: s.at, dur: .38 }); }
-    showBetween(scr, i > 0 ? s.at : -1, run[i + 1] ? run[i + 1].at + 0.4 : t1 + 1);
+    /* "keep_screen": true carries the previous scene's screen over as it is (same DOM, same state),
+       so a story can run through several scenes (new headline, labels, pose) without the screen blinking. */
+    let scr, api;
+    if (s.keep_screen && held) { scr = held.scr; api = held.api; }
+    else {
+      scr = $('div', 'screen scr-' + d.kind, glass);
+      api = (SCR[d.kind] || SCR.search)(scr, d, s);
+      if (i > 0) { A(scr, { opacity: [0, 1], translate: ['0px 46px', '0px 0px'] }, { at: s.at, dur: .38 }); }
+      held = { scr, api, from: i > 0 ? s.at : -1 };
+    }
+    showBetween(scr, held.from, run[i + 1] ? run[i + 1].at + 0.4 : t1 + 1);
     (s.actions || []).forEach(a => act(scr, api, a, s));
     const p = s.pose || (s.labels ? 'left' : 'center');
     if (p !== pose) { A(rig, { translate: [POSE[pose][0], POSE[p][0]], rotate: [POSE[pose][1], POSE[p][1]] }, { at: s.at, dur: .7, ease: EASE.io }); pose = p; }
     (s.labels || []).forEach(l => {
-      const el = $('div', 'lab', labels); $('b', '', el, l.text); if (l.sub) $('span', '', el, l.sub);
+      const el = $('div', 'lab', labels); const lb = $('b', '', el, l.text); if (l.sub) $('span', '', el, l.sub);
+      lb.style.whiteSpace = 'nowrap'; for (let fs = 66; fs > 44 && lb.scrollWidth > el.clientWidth - 34; fs -= 2) lb.style.fontSize = fs + 'px';   // a long word shrinks instead of running off the frame
       const t = s.at + (l.t || 0);
       A(el, { opacity: [0, 1], translate: ['-30px 0', '0 0'], filter: ['blur(8px)', 'blur(0px)'] }, { at: t, dur: .45 }); cue(t, 'label', { i: labN++ });
     });

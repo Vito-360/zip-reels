@@ -70,7 +70,7 @@ def history(n=8):
         for sc in s["scenes"]:
             t = sc["type"]
             if t == "phone":
-                t += ":" + sc.get("screen", {}).get("kind", "?")
+                t += ":" + ("(same screen)" if sc.get("keep_screen") else sc.get("screen", {}).get("kind", "?"))
             seq.append(t)
         a = s.get("audio", {})
         says = sum(1 for sc in s["scenes"] if sc.get("say")) + sum(len(sc.get("says", [])) for sc in s["scenes"])
