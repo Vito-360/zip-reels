@@ -733,11 +733,110 @@ S.listings = s => {
   });
 };
 
+/* ------------------------------------------------------------------ ad scenes
+   Same layout as the listing scenes: a centred headline whose bottom edge sits at y=800 and one object
+   right under it, starting at y=860, so the eye stays in one place across the cuts. */
+/* receipt: headline + a paper receipt feeding out of a slot right under it. One row per paid click, the
+   newest next to the slot (slow, fast, slow, so the first and the last rows can be read); then the total
+   row lands: what all of it brought in. Only the paper moves. */
+S.receipt = s => {
+  const root = sceneRoot(s), n = s.count ?? 40, ROW = 78, TOT = 168, tot = s.total || {};
+  lsHead(root, s, s.lines || [], s.chrome);
+  cue(s.at, s.at === 0 ? 'hit' : 'slam');
+  $('div', 'rc-slot', root);
+  const win = $('div', 'rc-win', root), paper = $('div', 'rc-paper', win);
+  const tr = $('div', 'rc-tot', paper); $('span', '', tr, tot.label || 'calls'); $('b', '', tr, String(tot.value ?? '0'));
+  const rows = $('div', 'rc-rows', paper);
+  for (let i = n; i >= 1; i--) { const r = $('div', 'rc-row', rows); $('span', '', r, (s.item || 'click') + ' ' + String(i).padStart(2, '0')); $('i', '', r); $('em', '', r, s.mark || 'paid'); }
+  $('div', 'rc-tear', paper);
+  const H = TOT + n * ROW, pre = Math.min(n, s.at === 0 ? (s.pre ?? 3) : 0);        // rows already out on the first frame
+  const lead = s.lead ?? 0.2, T = s.feed ?? 1.9, t0 = s.at + lead, tt = s.at + (s.total_at ?? lead + T + 0.3);
+  const ease = u => (u < .5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u));
+  const rowsAt = t => pre + (n - pre) * ease(clamp((t - t0) / T, 0, 1));
+  tick(t => {
+    const k = rowsAt(t), e = 1 - Math.pow(1 - clamp((t - tt) / 0.3, 0, 1), 3);
+    paper.style.transform = `translateY(${Math.round(k * ROW + e * TOT - H)}px)`;
+    const v = (rowsAt(t + 1 / 60) - rowsAt(t - 1 / 60)) * ROW;                      // px per frame: blur the rows while they fly
+    rows.style.filter = v > 14 ? `blur(${Math.min(7, v / 16).toFixed(1)}px)` : 'none';
+  });
+  let lastCue = -1;
+  for (let i = pre + 1; i <= n; i++) {
+    const v = (i - pre) / (n - pre), u = v < .5 ? Math.sqrt(v / 2) : 1 - Math.sqrt((1 - v) / 2), t = t0 + u * T;
+    if (t - lastCue < 0.05) continue;
+    cue(t, t - lastCue > 0.11 ? 'click' : 'key'); lastCue = t;
+  }
+  A(win, { translate: ['0px 0px', '-14px 0px', '11px 0px', '-6px 0px', '0px 0px'] }, { at: tt + 0.24, dur: .32, ease: EASE.lin });
+  cue(tt, 'swish'); cue(tt + 0.24, 'error'); cue(tt + 0.26, 'hit', { i: 1 });
+};
+/* landing: headline + one card that stays in place. It starts as the ad (what the ad promises), flips over
+   at flip_at to the page the click lands on (which says something else: at miss_at a cross, a shake, the
+   text goes grey), and from fix_at the page is corrected: its headline is retyped into the ad's words
+   (lime check), then one button appears (button_at) and is tapped (press_at). `heads` swaps the headline. */
+S.landing = s => {
+  const root = sceneRoot(s), ad = s.ad || {}, pg = s.page || {}, heads = s.heads || [{ t: 0, lines: s.lines || [] }];
+  const tf = s.at + (s.flip_at ?? 1.4), tm = s.at + (s.miss_at ?? (s.flip_at ?? 1.4) + 0.9);
+  const tx = s.fix_at != null ? s.at + s.fix_at : Infinity;
+  heads.forEach((h, k) => lsHead(root, s, h.lines, h.chrome, s.at + (h.t || 0), heads[k + 1] ? s.at + heads[k + 1].t : null));
+  cue(s.at, s.at === 0 ? 'hit' : 'slam');
+  const box = $('div', 'ld-box', root);
+  const cA = $('div', 'ld-card ld-ad', box), top = $('div', 'ld-top', cA);
+  $('b', '', top, ad.tag || 'Ad'); $('span', '', top, ad.site || 'yourbusiness.com');
+  const adText = ad.text || 'Free quote today', pgText = pg.text || 'Welcome to our website', fixText = pg.fix || adText;
+  const big = (parent, texts, max) => {                    // one line, sized so the longest of `texts` fits
+    const el = $('div', 'ld-big', parent), sp = $('span', '', el, texts[0]); el.style.fontSize = '100px';
+    const w = Math.max(...texts.map(x => { sp.textContent = x; return sp.getBoundingClientRect().width; })); sp.textContent = texts[0];
+    el.style.fontSize = clamp(Math.floor(100 * 800 / Math.max(1, w)), 40, max) + 'px'; return sp;
+  };
+  big(cA, [adText], 108);
+  const cB = $('div', 'ld-card ld-page', box), bar = $('div', 'ld-bar', cB);
+  for (let k = 0; k < 3; k++) $('i', '', bar); $('span', '', bar, pg.url || ad.site || 'yourbusiness.com');
+  const body = $('div', 'ld-body', cB), ptx = big(body, [pgText, fixText], 108);
+  const slot = $('div', 'ld-slot', body), sk = $('div', 'ld-sk', slot); for (let k = 0; k < 2; k++) $('u', '', sk);
+  const btn = $('div', 'ld-btn', slot); $('span', 'b1', btn, pg.button || 'Get my quote');
+  const b2 = $('span', 'b2', btn); b2.innerHTML = CHECK_W.replace('<svg', '<svg style="width:46px;height:46px"'); $('span', '', b2, pg.button_done || 'Requested');
+  const w1 = btn.offsetWidth; btn.classList.add('done'); const w2 = btn.offsetWidth; btn.classList.remove('done'); btn.style.width = Math.max(w1, w2) + 'px';
+  const bad = $('div', 'ld-badge ld-bad', box); bad.innerHTML = CROSS;
+  const ok = $('div', 'ld-badge ld-ok', box); ok.innerHTML = CHECK;
+  const bc = centerIn(btn, root);                           // measured before any transform is animated
+  if (s.at > 0) A(box, { scale: [.9, 1], opacity: [0, 1] }, { at: s.at, dur: .24 });
+  /* flip: the ad turns away on its top edge, the page turns in */
+  showBetween(cA, -1, tf + 0.16); showBetween(cB, tf + 0.16);
+  A(cA, { rotate: ['x 0deg', 'x 88deg'] }, { at: tf, dur: .16, ease: EASE.in });
+  A(cB, { rotate: ['x -88deg', 'x 0deg'] }, { at: tf + 0.16, dur: .26, ease: EASE.out });
+  cue(tf, 'whoosh');
+  /* miss */
+  const t1 = tx + (s.fix_lead ?? 0.3), dd = 0.22, td = s.type_dur ?? 0.5, tc = t1 + dd + td + 0.12;
+  showBetween(bad, tm, tc); A(bad, { scale: [0, 1] }, { at: tm, dur: .26, ease: EASE.back });
+  classAt(cB, 'miss', tm, t1);
+  A(box, { translate: ['0px 0px', '-16px 0px', '13px 0px', '-8px 0px', '0px 0px'] }, { at: tm, dur: .34, ease: EASE.lin });
+  cue(tm, 'error'); cue(tm + 0.04, 'hit', { i: 1 });
+  /* fix: same words as the ad, then one button */
+  tick(t => {
+    let x = pgText;
+    if (t >= t1 - 1e-6) { const u = (t - t1) / dd; x = u < 1 ? pgText.slice(0, Math.round((1 - u) * pgText.length)) : fixText.slice(0, Math.round(clamp((t - t1 - dd) / td, 0, 1) * fixText.length)); }
+    ptx.textContent = x || '​';
+  });
+  if (tx < Infinity) {
+    classAt(cB, 'typing', t1, t1 + dd + td);
+    for (let t = t1; t < t1 + dd + td - 0.01; t += 0.06) cue(t, 'key');
+    showBetween(ok, tc); A(ok, { scale: [0, 1] }, { at: tc, dur: .3, ease: EASE.back }); cue(tc, 'ding', { i: 1 });
+    const tb = s.at + (s.button_at ?? (tc - s.at) + 0.45), tp = s.press_at != null ? s.at + s.press_at : Infinity;
+    A(sk, { opacity: [1, 0] }, { at: tb - 0.12, dur: .12, ease: EASE.lin });
+    showBetween(btn, tb); A(btn, { scale: [.6, 1], opacity: [0, 1] }, { at: tb, dur: .3, ease: EASE.back }); cue(tb, 'pop');
+    if (tp < Infinity) {
+      const d = $('div', 'tap light st-tap', root); d.style.left = bc[0] + 'px'; d.style.top = bc[1] + 'px';
+      A(d, { opacity: [0, 1, 1, 0], scale: [1.7, 1, 1, 1.3], offset: [0, .45, .7, 1] }, { at: tp - 0.26, dur: 0.6, ease: EASE.lin });
+      classAt(btn, 'done', tp + 0.02); A(btn, { scale: [1, .94, 1] }, { at: tp, dur: .28 });
+      cue(tp, 'tap'); cue(tp + 0.1, 'ding', { i: 3 });
+    }
+  } else showBetween(btn, Infinity);
+};
+
 /* ------------------------------------------------------------------ build */
 for (let i = 0; i < scenes.length; i++) {
   const s = scenes[i];
   if (s.type === 'phone') { const run = [s]; while (scenes[i + 1] && scenes[i + 1].type === 'phone' && !scenes[i + 1].new_phone) run.push(scenes[++i]); phoneRun(run); }
-  else if (S[s.type]) { S[s.type](s); if (s.at > 0 && !['flash', 'offer', 'end', 'bignum', 'slam', 'chaos', 'statement', 'blurtype', 'cut', 'button', 'merge', 'count', 'dial', 'listings'].includes(s.type)) cue(s.at, 'swish'); }
+  else if (S[s.type]) { S[s.type](s); if (s.at > 0 && !['flash', 'offer', 'end', 'bignum', 'slam', 'chaos', 'statement', 'blurtype', 'cut', 'button', 'merge', 'count', 'dial', 'listings', 'receipt', 'landing'].includes(s.type)) cue(s.at, 'swish'); }
   else console.error('unknown scene type', s.type);
 }
 /* The technical HUD is opt-in ("hud": true). Its counters change on every frame in all four corners,

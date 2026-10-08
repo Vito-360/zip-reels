@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT / "engine"))
 import render, audio  # noqa: E402
 
 CTA = "Get the free check"
-SCENE_TYPES = {"phone", "bignum", "flash", "lines", "statement", "cards", "offer", "end", "chaos", "blurtype", "stack", "slam", "cut", "button", "merge", "count", "dial", "listings"}
+SCENE_TYPES = {"phone", "bignum", "flash", "lines", "statement", "cards", "offer", "end", "chaos", "blurtype", "stack", "slam", "cut", "button", "merge", "count", "dial", "listings", "receipt", "landing"}
 
 
 def validate(spec):
@@ -74,7 +74,7 @@ def history(n=8):
             seq.append(t)
         a = s.get("audio", {})
         says = sum(1 for sc in s["scenes"] if sc.get("say")) + sum(len(sc.get("says", [])) for sc in s["scenes"])
-        print(f"{s['date']}  {s['style']:8} {s['pillar']:8} {a.get('mood','?')}/{a.get('bpm','?')}/{a.get('seed','?')}  ending={s.get('ending','?')}  voice lines={says}")
+        print(f"{s['date']}  {s['style']:8} {s['pillar']:8} {a.get('mood','?')}/{a.get('bpm','?')}/{a.get('seed','?')}  ending={s.get('ending','?')}  voice lines={says}  service={s.get('service','?')}  name={s.get('name','?')}")
         print("   scenes:", " > ".join(seq))
 
 

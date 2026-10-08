@@ -1,0 +1,116 @@
+{
+ "date": "2026-10-14",
+ "slug": "clicks-no-calls",
+ "name": "clicks no calls",
+ "style": "kinetic",
+ "pillar": "booked",
+ "service": "ads",
+ "ending": "question",
+ "topic": "Paid ads: people click the ad, every click is paid for, and nobody calls, because the ad promises one thing and the click lands on a homepage that says something else. Fix: the page repeats the ad's words and has one button.",
+ "duration": 15,
+ "cover_at": 3.1,
+ "audio": {
+  "bpm": 124,
+  "mood": "stutter",
+  "seed": 50
+ },
+ "scenes": [
+  {
+   "type": "receipt",
+   "tag": "hook",
+   "dur": 3.4,
+   "lines": [
+    "40 clicks.",
+    "no calls."
+   ],
+   "size": 190,
+   "count": 40,
+   "item": "click",
+   "mark": "paid",
+   "total": {
+    "label": "calls",
+    "value": "0"
+   },
+   "lead": 0.2,
+   "feed": 1.9,
+   "total_at": 2.4,
+   "say": "All those clicks, and nobody called?!"
+  },
+  {
+   "type": "slam",
+   "tag": "sting",
+   "dur": 1.5,
+   "lines": [
+    "you paid",
+    "for every",
+    "one."
+   ],
+   "rules": false,
+   "step": 0.3
+  },
+  {
+   "type": "landing",
+   "tag": "wrong page",
+   "dur": 7.2,
+   "turn": true,
+   "turn_at": 3.4,
+   "heads": [
+    {
+     "t": 0,
+     "lines": [
+      "the ad said:"
+     ]
+    },
+    {
+     "t": 1.46,
+     "lines": [
+      "the page said:"
+     ]
+    },
+    {
+     "t": 3.4,
+     "lines": [
+      "same words.",
+      "one button."
+     ],
+     "chrome": 1
+    }
+   ],
+   "ad": {
+    "tag": "Ad",
+    "site": "yourbusiness.com",
+    "text": "Free quote today"
+   },
+   "page": {
+    "url": "yourbusiness.com",
+    "text": "Welcome to our website",
+    "button": "Get my quote",
+    "button_done": "Requested"
+   },
+   "flip_at": 1.3,
+   "miss_at": 2.3,
+   "fix_at": 3.4,
+   "button_at": 5.0,
+   "press_at": 5.9,
+   "says": [
+    {
+     "t": 2.0,
+     "text": "Wrong page. They're gone!"
+    },
+    {
+     "t": 3.9,
+     "text": "Make the page keep the promise!"
+    }
+   ],
+   "fix_lead": 0.5
+  },
+  {
+   "type": "end",
+   "dur": 2.9,
+   "tagline": "systems that sell.",
+   "question": "Where does your ad send people?",
+   "say": "Go check where your ad lands!"
+  }
+ ],
+ "caption": "Say forty people click your ad and nobody calls.\n\nWith Google Ads you pay for the click, not for the call. So the page people land on has to do the selling.\n\nOne way it goes wrong: the ad says \"Free quote today\" and the click lands on a homepage that says \"Welcome to our website\". The promise is gone, and so is the visitor.\n\nThe fix is small. Send the ad to a page that repeats the ad's words at the top, and put one button right under them.\n\nWhere does your ad send people?"
+}

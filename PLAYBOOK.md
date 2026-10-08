@@ -2,10 +2,22 @@
 
 How to make one zip. reel. Read this fully before writing a spec.
 
-zip. (donebyzip.com) is a three-person marketing agency in Croatia for small businesses with a bad
-website or no website. Tagline: "Systems that sell." Framework: **Found / Trusted / Booked**
-(Google and local visibility → a website that earns trust → a short path to an enquiry or booking).
-Entry offer: a free website check, three findings in writing.
+zip. (donebyzip.com) is a three-person marketing agency in Croatia for small businesses whose online
+presence does not bring them customers. Tagline: "Systems that sell." Framework: **Found / Trusted / Booked**
+(Google and local visibility → a presence that earns trust → a short path to an enquiry or booking).
+Entry offer: the free check, three findings in writing.
+
+zip is **not** only a web-design agency. Never describe it as one, and never as doing "websites" only. Its services:
+
+1. Websites: new sites and redesigns of old ones.
+2. SEO and search visibility: local SEO, Google Business Profile, where a business shows up on Google's results page.
+3. Paid ads: Google Ads and Meta (Facebook and Instagram) ads.
+4. Copywriting for pages and ads, and a monthly report.
+5. The "System" package: an AI assistant on the site, automatic replies to enquiries, booking confirmations and reminders, review requests.
+
+The typical customer has a bad website or none, and the same owner also has problems with search and ads:
+not showing up on Google, a neglected Google listing, ads that spend money and bring no calls. The videos
+reflect the whole range over the weeks (section 2c).
 
 ## 1. What one run produces
 
@@ -15,7 +27,8 @@ One video for one posting day (Mon–Fri), 15 seconds, 1080×1920, 30 fps, in tw
 - `out/<date>-<slug>-voice.mp4`: the same, with a synthetic English voice-over
 
 plus `-cover.jpg`, `-caption.txt` and `-sheet.jpg` (12 frames for checking). MP4s are not committed.
-What is committed: the spec in `specs/` and one new row in `LOG.md`.
+What is committed: the spec in `specs/` and one new row in `LOG.md`. The dated names stay inside the repo;
+the files sent to the user are renamed copies with no date in the name (section 7).
 
 ## 2. Pick the day, style, pillar and topic
 
@@ -30,12 +43,23 @@ What is committed: the spec in `specs/` and one new row in `LOG.md`.
 
 Of the five videos in a week, one or two are **tied** to that week's image posts; the others are **independent** (an owner problem chosen by the rules above, unrelated to the posts).
 
-- A tied video is the 15-second version of one general-story carousel from the Canva folder "zip – Instagram" (designs named `<Monday's date> – STORY – <title>`; a story carousel made before this naming rule counts too if it is clearly this week's). Take the first story that has no tied video in `LOG.md`.
+- A tied video is the 15-second version of one general-story carousel from the Canva folder "zip – Instagram". Since 7 Oct 2026 the week's designs sit in a subfolder named with that week's Monday (`YYYY-MM-DD`) and are named only after their content ("amazon button", "old number"), with no date and no type in the name; older ones sit directly in the folder as `<Monday's date> – STORY – <title>`. Take the first story that has no tied video in `LOG.md`.
 - Shape: the hook is the story's headline fact, the middle shows its one point, the ending turns it toward the small-business owner, exactly as the carousel does.
 - Use **only** facts that are on the design. No new facts, numbers or names. Company names the post itself names may appear as text; no logos.
 - Do not mention a posting day in the caption. "The full story is on our profile." is fine.
 - Topic and hook come from the post; style, music and ending still follow the rotation. A story video that is not built on Found / Trusted / Booked uses `"pillar": "none"` and does not count in the pillar rotation.
 - Set `"tied": "<design title>"` in the spec and fill the `tied` column in `LOG.md` (`independent` otherwise), so the team can schedule the video on the same day as its post.
+
+## 2c. Spread across the services
+
+Before choosing a topic, look at the `service` column of the last five rows of `LOG.md` (`website`, `search`, `ads`, or `general`). The independent videos must not all be about websites.
+
+- If none of the last three videos was about search visibility (showing up on Google, the Google listing, reviews, local search), make this one about that.
+- If none of the last five was about paid ads (money spent without calls, an ad that leads to the wrong page, an ad shown to the wrong people), make this one about ads.
+- Use the owner's words on screen ("you're on page two", "40 clicks, no calls"), never trade terms ("SERP", "CTR", "ROAS").
+- Set `"service"` in the spec and fill the `service` column in `LOG.md`.
+
+**Extra posts made by hand.** The user also makes extra posts by hand in a separate chat; the task prompt lists the approved ones. No video may use their story, their example or their headline idea, or take their name. They are never a source for a tied video. A different story about the same service is fine.
 
 ## 2a. Every video must be different
 
@@ -53,7 +77,7 @@ Same brand, new video: the colours, type and logo stay; everything else moves.
 
 - All on-screen text, voice-over and caption in **English**. Plain, practical, no hype. Short lines: a viewer reads each one in about a second.
 - The first frame must already show the full hook. No logo intro.
-- Speak to both groups: owners with a bad website and owners with none. Do not build a video only for apartments, salons or any single trade.
+- Speak to owners with a bad website and owners with none, and to the owner who cannot be found on Google or pays for ads that bring no calls (section 2c). Do not build a video only for apartments, salons or any single trade.
 - **Never invent** statistics, studies, client results, testimonials or review counts. No "53% of visitors…". If a number is not a plain fact anyone can check (a date, a count of items on screen), leave it out.
 - Do not write "no bots" (zip sells an AI assistant in one package). "From a person" is fine.
 - Do not claim experience zip does not have yet ("mistakes we see in almost every check").
@@ -90,7 +114,7 @@ Every video is built around where the viewer's eyes go. From eye-tracking resear
 5. **Cover.** Same logic as a still: the main text in the upper-centre area as one block.
 6. **Check.** On the sheet, say for each scene where the eye lands first and where it goes next. Fix any scene where the first look lands on something unimportant. Put the eye path in one line in the summary.
 
-The story scenes (`button`, `merge`, `count`) are built on this: a centred headline whose bottom edge is at y=900 and one object centred on y=1040, in the same place in every scene. The listing scenes (`dial`, `listings`) do the same one step higher: headline bottom edge at y=800, the call card or the first row starting at y=860.
+The story scenes (`button`, `merge`, `count`) are built on this: a centred headline whose bottom edge is at y=900 and one object centred on y=1040, in the same place in every scene. The listing scenes (`dial`, `listings`) and the ad scenes (`receipt`, `landing`) do the same one step higher: headline bottom edge at y=800, the object (call card, first row, receipt slot, ad or page card) starting at y=860.
 
 ## 5. Write the spec
 
@@ -98,8 +122,8 @@ Copy the closest existing spec in `specs/` and change it. Minimal shape:
 
 ```json
 {
-  "date": "2026-10-08", "slug": "short-kebab-title", "style": "phone|kinetic|cards",
-  "pillar": "found|trusted|booked", "ending": "question|cta", "topic": "one sentence",
+  "date": "2026-10-08", "slug": "short-kebab-title", "name": "two or three words", "style": "phone|kinetic|cards",
+  "pillar": "found|trusted|booked", "service": "website|search|ads|general", "ending": "question|cta|line", "topic": "one sentence",
   "duration": 15,
   "audio": {"bpm": 120, "mood": "pulse|bounce|deep|tick", "seed": 4},
   "scenes": [ ... ],
@@ -110,7 +134,8 @@ Copy the closest existing spec in `specs/` and change it. Minimal shape:
 - Scenes play in order. Each needs `type` and `dur`; durations must add up to 15.
 - Mark the scene where the video turns from problem to solution with `"turn": true`. The beat gets fuller there. When the turn happens inside a scene, add `"turn_at": <seconds from the scene start>`.
 - Voice-over: `"say": "..."` on a scene (starts 0.15 s in), or `"says": [{"t": 3.1, "text": "..."}]` for several lines in one scene. See section 5a for what the voice may and may not say.
-- Change `audio.seed`, `mood` (`pulse`, `bounce`, `deep`, `tick`, `snap`, `shuffle`, `glide`) and `bpm` (104–128) every day so the music differs (key, pattern, tempo and feel). Add a new mood to `MOODS` in `engine/audio.py` when the last videos have used them all.
+- Change `audio.seed`, `mood` (`pulse`, `bounce`, `deep`, `tick`, `snap`, `shuffle`, `glide`, `stutter`) and `bpm` (104–128) every day so the music differs (key, pattern, tempo and feel). Add a new mood to `MOODS` in `engine/audio.py` when the last videos have used them all.
+- `"name"` is the name of the files the user receives (section 7); `"service"` is what the video is about (section 2c).
 - Optional: `"tied": "<design title>"` (section 2b), `"cover_at": <seconds>` (frame used for the cover, default 0).
 - `style: "kinetic"` gives hard cuts on plain black; the other two styles fade between scenes over a faint grid.
 
@@ -148,6 +173,8 @@ The voice is a person reacting to what is on screen. It is not a narrator readin
 | `count` | story: the circle counts up in place, the name of the current step under it, one more ring behind it per count | `lines`, `items`, `lead`, `step`, `outro` `{t, text}`, `collapse` |
 | `dial` | listing: centred headline over one call card (handset with rings, number, status); at `fail_at` the number is struck out, the status changes and the card shakes | `lines`, `chrome`, `number`, `status`, `status_fail`, `fail_at` |
 | `listings` | listing: centred headline over up to three rows (a place and the value shown there, grey with a cross); from `fix.t` the rows are corrected one at a time: the digits that differ roll to the new value and a lime check replaces the cross | `lines`, `retitle` `{t, lines, chrome}`, `value`, `rows` `[{name, value, to}]`, `lead`, `step`, `fix` `{t, value, step}` |
+| `receipt` | ads: centred headline over a paper receipt feeding out of a slot, one row per paid click (newest next to the slot; slow, fast, slow), then the total row lands and the paper shakes | `lines`, `chrome`, `size`, `count` (rows, default 40), `item`, `mark`, `total` `{label, value}`, `lead`, `feed` (seconds of feeding), `total_at`, `pre` (rows already out on frame 0) |
+| `landing` | ads: centred headline over one card that stays in place: the ad (tag, site, promise) flips over to the page the click lands on; at `miss_at` cross, shake, grey text; from `fix_at` the page headline is retyped into the ad's words (lime check), then one button appears and is tapped | `heads` `[{t, lines, chrome}]`, `ad` `{tag, site, text}`, `page` `{url, text, fix, button, button_done}`, `flip_at`, `miss_at`, `fix_at`, `fix_lead`, `button_at`, `press_at` |
 
 Consecutive `phone` scenes share one phone; the screen changes inside it. With `labels`, the phone moves left and the labels appear on the right (set `labels_top` so each label sits beside the thing it names). `"keep_screen": true` on a phone scene keeps the previous scene's screen exactly as it is, state included, instead of loading a new one: use it when one screen carries the story through several scenes (new headline, labels, the turn). Such a scene takes no `screen`; its actions use the kept screen's keys. A phone scene may have no `title` at all; a `retitle` can then bring the headline in after the action on the screen has finished, so only one thing moves at a time.
 
@@ -204,10 +231,10 @@ Nobody in the pipeline can hear the audio. Say that plainly in the summary every
 
 ## 7. Finish
 
-1. Add a row to `LOG.md`.
+1. Add a row to `LOG.md`, including the `service` and `name` columns.
 2. Commit `specs/<date>.json` and `LOG.md` to `main` and push.
-3. Send the files to the user: both MP4s and the cover.
-4. Reply in **Croatian** with a short summary: day and date and whether the video is tied (to which post) or independent, style, pillar (only if the video is built on it), topic, hook, the eye path in one line, where the single call to action sits (or that the video has none), what is visually new, how it ends, the voice-over script, the caption (English), and anything that could not be done or checked.
+3. **File names.** Every file the user receives is named after what the video is about, with no date anywhere in the name: two or three plain English words from the hook or topic, lowercase, separated by spaces ("old number"). No date, weekday, "zip", "reel", version number or underscore. A tied video takes exactly the name of its Canva design. An independent video needs a name that no earlier video (`name` column in `LOG.md`), no design in "zip – Instagram" and no extra post made by hand has. Copy the outputs to `<name>.mp4` (sound effects only), `<name> voice.mp4` (with the voice-over) and `<name> cover.<ext>`, leave the dated files in `out/` as they are, and send the renamed copies: both MP4s and the cover.
+4. Reply in **Croatian** with a short summary: day and date and whether the video is tied (to which post) or independent, the file name, which service it is about, style, pillar (only if the video is built on it), topic, hook, the eye path in one line, where the single call to action sits (or that the video has none), what is visually new, how it ends, the voice-over script, the caption (English), and anything that could not be done or checked.
 
 Never post to Instagram. These are drafts for the team.
 
