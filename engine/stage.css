@@ -362,9 +362,9 @@ body{font-family:Geist,Inter,system-ui,sans-serif;color:var(--fg);-webkit-font-s
 .blurtype .sub,.slam .sub{font-size:44px;font-weight:450;letter-spacing:-.01em;line-height:1.3;color:var(--fg2);margin-top:44px;max-width:860px;white-space:normal}
 
 /* ---------- story scenes with the figure (shop / street / map) ----------
-   One figure, drawn once in FIGURE and reused by every scene, so the character is identical throughout.
-   Headline sits high (top 300, like the phone scenes' title); the scene plays in a 960x960 area below it,
-   so the text is never covered by the shop, the street or the map. */
+   One figure, written once in FIGURE and reused by every scene, so the character is identical throughout.
+   Limbs are separate groups rotating about the shoulder and the hip, so the same figure can stand, walk,
+   pace or slump without ever being redrawn. Headline sits high; the scene plays in a 960x960 area below it. */
 .fg-head{position:absolute;left:60px;right:60px;top:300px;text-align:center;font-weight:700;letter-spacing:-.05em;line-height:.95;transform-origin:50% 0}
 .fg-head .ln{display:block;white-space:nowrap}
 .fg-head .ln.chrome{padding-bottom:.14em;margin-bottom:-.14em}
@@ -373,19 +373,40 @@ body{font-family:Geist,Inter,system-ui,sans-serif;color:var(--fg);-webkit-font-s
 .figure svg{width:100%;height:100%;overflow:visible}
 .figure .lm{stroke:#FAFAFA;stroke-width:11;stroke-linecap:round;fill:none}
 .figure .hd{fill:#FAFAFA}
+.figure .fg-leg,.figure .fg-arm,.figure .fg-body{transform-box:view-box}
+.figure .fg-leg{transform-origin:60px 130px}
+.figure .fg-arm{transform-origin:60px 72px}
+.figure .fg-body{transform-origin:60px 186px}
+.figure .fg-leg.l{rotate:-14deg}
+.figure .fg-leg.r{rotate:14deg}
+.figure .fg-arm.l{rotate:-24deg}
+.figure .fg-arm.r{rotate:24deg}
 .figure.dim .lm{stroke:#5c5c64}
 .figure.dim .hd{fill:#5c5c64}
+.figure.slump .fg-body{rotate:7deg}
+.figure.slump .fg-arm.l{rotate:-3deg}
+.figure.slump .fg-arm.r{rotate:3deg}
+.fg-shadow{position:absolute;height:12px;border-radius:50%;background:#15151a}
 
-/* shop interior */
+/* cafe interior */
 .sh-room{position:absolute;inset:0}
-.sh-floor{position:absolute;left:40px;right:40px;bottom:150px;height:3px;background:#26262b}
-.sh-counter{position:absolute;left:50%;margin-left:-290px;bottom:100px;width:580px;height:160px;border:3px solid #26262b;border-bottom:0;background:#0D0D0F;border-radius:8px 8px 0 0}
-.sh-shelf{position:absolute;left:50%;margin-left:-330px;top:150px;width:660px;height:3px;background:#26262b}
-.sh-shelf i{position:absolute;bottom:3px;width:40px;height:60px;background:#17171A;border:2px solid #26262b;border-radius:3px}
-.sh-sign{position:absolute;left:50%;margin-left:-130px;top:20px;width:260px;height:86px;border:5px solid #FAFAFA;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:46px;font-weight:800;letter-spacing:.16em}
-.sh-cup{position:absolute;left:50%;margin-left:-30px;bottom:268px;width:60px;height:54px;border:6px solid #5c5c64;border-radius:4px 4px 16px 16px}
-.sh-cup:after{content:"";position:absolute;right:-26px;top:8px;width:26px;height:26px;border:6px solid #5c5c64;border-left:0;border-radius:0 16px 16px 0}
-.sh-items{position:absolute;left:0;right:0;top:10px;display:flex;flex-direction:column;align-items:center;gap:26px}
+.sh-floor{position:absolute;left:0;right:0;bottom:150px;height:3px;background:#26262b}
+.sh-counter{position:absolute;right:20px;bottom:100px;width:280px;height:170px;border:3px solid #26262b;border-bottom:0;background:#0D0D0F;border-radius:8px 8px 0 0}
+.sh-counter:before{content:"";position:absolute;left:-6px;right:-6px;top:-10px;height:12px;background:#26262b;border-radius:6px}
+.sh-door{position:absolute;left:20px;bottom:150px;width:170px;height:330px;border:3px solid #26262b;border-bottom:0;background:#000;border-radius:8px 8px 0 0}
+.sh-door:after{content:"";position:absolute;right:22px;top:50%;width:14px;height:14px;border-radius:50%;background:#3a3a42}
+.sh-shelf{position:absolute;right:40px;top:150px;width:240px;height:3px;background:#26262b}
+.sh-shelf i{position:absolute;bottom:3px;width:36px;height:56px;background:#17171A;border:2px solid #26262b;border-radius:3px}
+.sh-sign{position:absolute;left:14px;bottom:500px;width:182px;height:70px;border:5px solid #FAFAFA;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:800;letter-spacing:.14em}
+.sh-table{position:absolute;bottom:150px;width:150px;height:118px}
+.sh-table u{position:absolute;left:0;right:0;top:0;height:13px;background:#17171A;border:3px solid #26262b;border-radius:7px}
+.sh-table s{position:absolute;left:50%;margin-left:-6px;top:13px;width:12px;bottom:0;background:#26262b}
+.sh-table b{position:absolute;bottom:0;width:48px;height:13px;background:#17171A;border:3px solid #26262b;border-radius:7px}
+.sh-table b.l{left:-34px}
+.sh-table b.r{right:-34px}
+.sh-cup{position:absolute;width:52px;height:46px;border:6px solid #5c5c64;border-radius:4px 4px 16px 16px}
+.sh-cup:after{content:"";position:absolute;right:-24px;top:7px;width:24px;height:24px;border:6px solid #5c5c64;border-left:0;border-radius:0 16px 16px 0}
+.sh-items{position:absolute;left:0;right:0;top:0;display:flex;flex-direction:column;align-items:center;gap:26px}
 .sh-item{display:flex;align-items:center;gap:24px;font-size:76px;font-weight:650;letter-spacing:-.03em;color:#FAFAFA}
 .sh-item i{width:70px;height:70px;border-radius:50%;background:var(--lime);display:flex;align-items:center;justify-content:center;flex:none}
 .sh-item i svg{width:46px;height:46px}
@@ -412,6 +433,3 @@ body{font-family:Geist,Inter,system-ui,sans-serif;color:var(--fg);-webkit-font-s
 .mp-mine{position:absolute;width:74px;height:74px;margin:-37px 0 0 -37px;border-radius:50% 50% 50% 0;rotate:-45deg;border:6px solid #5c5c64;background:#000}
 .mp-mine.on{border-color:#FAFAFA;background:#FAFAFA}
 .mp-ring{position:absolute;width:74px;height:74px;margin:-37px 0 0 -37px;border-radius:50%;border:5px solid #FAFAFA}
-.mp-guest{position:absolute;width:60px;height:104px}
-.mp-guest b{position:absolute;left:50%;margin-left:-18px;top:0;width:36px;height:36px;border-radius:50%;background:#FAFAFA}
-.mp-guest i{position:absolute;left:50%;margin-left:-24px;top:34px;width:48px;height:70px;background:#FAFAFA;border-radius:22px 22px 4px 4px}

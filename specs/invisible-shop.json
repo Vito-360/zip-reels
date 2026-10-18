@@ -7,9 +7,9 @@
   "service": "search",
   "ending": "cta",
   "kind": "story",
-  "topic": "A small shop owner does everything right inside the shop, but nobody on the street knows it exists. On the map of the neighbourhood every other place is lit and his is not. One fix, and the first customer walks in.",
+  "topic": "A cafe owner does everything right inside, but nobody on the street knows the place exists. On the map of the neighbourhood every other place is lit and his is not. One fix, and the street walks in and fills his tables.",
   "duration": 18,
-  "cover_at": 0.4,
+  "cover_at": 0.5,
   "audio": {
     "bpm": 106,
     "mood": "deep",
@@ -18,83 +18,114 @@
   "scenes": [
     {
       "type": "shop",
-      "dur": 1.2,
+      "dur": 1.4,
       "lines": [
         "Empty. Again."
       ],
       "sign": "OPEN",
-      "size": 170
+      "size": 170,
+      "pace": true,
+      "pace_by": 95,
+      "pace_cycle": 0.64,
+      "steps": 1.4
     },
     {
       "type": "shop",
-      "dur": 2.0,
+      "dur": 1.8,
       "lines": [
         "He did everything right."
       ],
       "size": 140,
-      "sway": false,
+      "pace": true,
+      "pace_by": 70,
+      "pace_cycle": 0.58,
       "items": [
         "Clean.",
         "Stocked.",
         "Open."
       ],
-      "lead": 0.25,
-      "step": 0.52
+      "lead": 0.2,
+      "step": 0.5
     },
     {
       "type": "street",
-      "dur": 2.8,
+      "dur": 2.6,
       "count": 10,
       "seed": 7
     },
     {
       "type": "shop",
-      "dur": 1.5,
+      "dur": 1.4,
       "lines": [
         "Nobody came."
       ],
       "size": 170,
       "dim": true,
-      "cup": true,
-      "sway": false
+      "slump": true,
+      "cup": true
     },
     {
       "type": "map",
-      "dur": 3.0,
+      "dur": 2.6,
       "lines": [
         "He wasn't bad."
       ],
       "size": 160,
       "seed": 11,
-      "lead": 0.25,
-      "step": 0.08
+      "lead": 0.2,
+      "step": 0.07
     },
     {
       "type": "map",
-      "dur": 1.5,
+      "dur": 1.4,
       "lines": [
         "He was invisible."
       ],
       "size": 160,
       "seed": 11,
       "others": "on",
-      "dim_others": 0.15
+      "dim_others": 0.12
     },
     {
       "type": "map",
-      "dur": 3.5,
+      "dur": 1.6,
       "turn": true,
-      "turn_at": 0.9,
+      "turn_at": 0.5,
       "lines": [
-        "One fix.",
-        "First guest."
+        "One fix."
       ],
-      "size": 160,
+      "size": 180,
       "seed": 11,
       "others": "on",
-      "dim_others": 0.0,
-      "light_at": 0.9,
-      "walk_at": 1.7
+      "light_at": 0.5
+    },
+    {
+      "type": "shop",
+      "dur": 2.7,
+      "lines": [
+        "The street walked in."
+      ],
+      "size": 140,
+      "sway": false,
+      "wave": 1.7,
+      "guests": [
+        {
+          "t": 0.1,
+          "x": 166,
+          "scale": 0.88
+        },
+        {
+          "t": 0.6,
+          "x": 416,
+          "scale": 0.82
+        },
+        {
+          "t": 1.1,
+          "x": 620,
+          "scale": 0.9,
+          "sit": false
+        }
+      ]
     },
     {
       "type": "end",
@@ -103,5 +134,5 @@
       "cta": "Get the free check"
     }
   ],
-  "caption": "He had the cleanest shop on the street.\n\nThe shelves were full, the lights were on, the door was unlocked. People still walked past it all day.\n\nThe problem was never the shop. It was that nobody searching the neighbourhood could find it. Every other place showed up. His didn't.\n\nThat part is fixable, and it is usually the cheapest thing on the list.\n\nWhat would someone type to find a business like yours?"
+  "caption": "He had the cleanest cafe on the street.\n\nThe tables were set, the lights were on, the door was unlocked. People still walked past it all day.\n\nThe problem was never the cafe. It was that nobody searching the neighbourhood could find it. Every other place showed up. His didn't.\n\nThat part is fixable, and it is usually the cheapest thing on the list.\n\nWhat would someone type to find a business like yours?"
 }

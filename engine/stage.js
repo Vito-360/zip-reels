@@ -835,14 +835,29 @@ S.landing = s => {
 /* ------------------------------------------------------------------ figure scenes (shop / street / map)
    One small figure carries the story. FIGURE is written once and every scene reuses that exact markup,
    so the character cannot drift between cuts: same proportions, same stroke, same colours throughout.
-   Layout follows the other story scenes: headline bottom edge at y=900, the scene object centred on y=1040. */
-const FIGURE = `<svg viewBox="0 0 120 210" aria-hidden="true">
+   Arms and legs are their own groups turning about the shoulder and the hip, so the one figure can stand,
+   walk, pace or slump. Layout: headline at the top of the safe area, the scene in a 960x960 area below. */
+const FIGURE = `<svg viewBox="0 0 120 210" aria-hidden="true"><g class="fg-body">
+<g class="fg-leg l"><path class="lm" d="M60 130 L60 188"/></g>
+<g class="fg-leg r"><path class="lm" d="M60 130 L60 188"/></g>
+<g class="fg-arm l"><path class="lm" d="M60 72 L60 122"/></g>
+<g class="fg-arm r"><path class="lm" d="M60 72 L60 122"/></g>
+<path class="lm" d="M60 50 L60 130"/>
 <circle class="hd" cx="60" cy="27" r="21"/>
-<path class="lm am"  d="M60 72 L28 104"/><path class="lm am2" d="M60 72 L92 104"/>
-<path class="lm bd"  d="M60 50 L60 130"/>
-<path class="lm lg"  d="M60 130 L36 186"/><path class="lm lg2" d="M60 130 L84 186"/>
-</svg>`;
+</g></svg>`;
 function figure(parent, cls) { const f = $('div', 'figure ' + (cls || ''), parent); f.innerHTML = FIGURE; return f; }
+/* walk(): one walk cycle on the figure's own limbs, repeated. `at` is when the stride starts, `cycle` its
+   length in seconds. Legs swing in opposition, arms counter them, and the body lifts twice per cycle. */
+function walk(fig, at, cycle = 0.62, iter = 99, amp = 1, sound = 0) {
+  const q = s => fig.querySelector(s), o = { at, dur: cycle, iter, ease: EASE.io };
+  const sw = (el, a) => A(el, { rotate: [`${a}deg`, `${-a}deg`, `${a}deg`] }, o);
+  sw(q('.fg-leg.l'), 26 * amp); sw(q('.fg-leg.r'), -26 * amp);
+  sw(q('.fg-arm.l'), -20 * amp); sw(q('.fg-arm.r'), 20 * amp);
+  A(q('.fg-body'), { translate: ['0 0', `0 ${-5 * amp}px`, '0 0', `0 ${-5 * amp}px`, '0 0'] }, { at, dur: cycle, iter, ease: EASE.io });
+  /* Footsteps are only sounded for `sound` seconds. A figure that keeps walking for the whole scene would
+     otherwise fire a cue twice per cycle and bury the music under a rattle of steps. */
+  for (let t = Math.max(at, 0), k = 0; t < at + sound && k < 12; k++, t = at + k * cycle * 0.5) cue(t, 'step', { i: k % 2 });
+}
 function fgStage(s) {                                   // headline high, then the 960×960 area the scene plays in
   const root = sceneRoot(s);
   if ((s.lines || []).length) {                        // a scene may run without a headline, so the eye is free to watch
@@ -855,22 +870,44 @@ function fgStage(s) {                                   // headline high, then t
   const st = $('div', 'fg-stage', root);
   return { root, st };
 }
-/* shop: the inside of the shop. The figure stands behind the counter, alone. Optional OPEN sign, a cup
-   left on the counter, and `items` that tick off one by one ("everything was right"). */
+const DOOR_X = 105, COUNTER_X = 780;                    // the cafe's two fixed points, in stage coordinates
+/* shop: inside the cafe. Door on the left, counter on the right, two tables between them. The owner works
+   behind the counter; `pace` walks him back and forth, `slump` drops his shoulders, `guests` brings people
+   in through the door to the tables. The tables are there from the first scene, so their emptiness reads. */
 S.shop = s => {
-  const { root, st } = fgStage(s);
+  const { st } = fgStage(s);
   const room = $('div', 'sh-room', st);
   $('div', 'sh-floor', room);
+  $('div', 'sh-door', room);
+  const tables = [200, 450];          // stools sit at table ±; guests are placed on them, never on each other
+  tables.forEach(x => { const tb = $('div', 'sh-table', room); tb.style.left = x + 'px'; $('u', '', tb); $('s', '', tb); $('b', 'l', tb); $('b', 'r', tb); });
   if (!s.items) {                                        // the shelf is dropped when the tick list needs the wall
     const shelf = $('div', 'sh-shelf', room);
-    for (let k = 0; k < 7; k++) { const b = $('i', '', shelf); b.style.left = (22 + k * 92) + 'px'; b.style.height = (44 + (k % 3) * 18) + 'px'; }
+    for (let k = 0; k < 4; k++) { const b = $('i', '', shelf); b.style.left = (20 + k * 86) + 'px'; b.style.height = (44 + (k % 3) * 18) + 'px'; }
   }
-  const fig = figure(room, s.dim ? 'dim' : '');
-  fig.style.bottom = '230px'; fig.style.top = 'auto';
+  const sh = $('div', 'fg-shadow', room);
+  sh.style.cssText += `left:${COUNTER_X - 60}px;bottom:238px;width:120px`;
+  const fig = figure(room, (s.dim ? 'dim ' : '') + (s.slump ? 'slump' : ''));
+  fig.style.cssText += `left:${COUNTER_X - 84}px;margin-left:0;bottom:230px;top:auto`;
   $('div', 'sh-counter', room);
   if (s.sign && !s.items) { const sg = $('div', 'sh-sign', room, s.sign); if (s.at > 0) A(sg, { opacity: [0, 1], scale: [.8, 1] }, { at: s.at + 0.1, dur: .26, ease: EASE.back }); }
-  if (s.cup) $('div', 'sh-cup', room);
-  if (s.sway !== false) A(fig, { translate: ['0px 0px', '0px -7px', '0px 0px'] }, { at: s.at, dur: 2.2, ease: EASE.io, iter: 99 });
+  if (s.cup) { const c = $('div', 'sh-cup', room); c.style.cssText += `left:${tables[0] + 48}px;bottom:272px`; }
+  if (s.pace) {                                          // he paces behind the counter: nothing else to do
+    const span = s.pace_by ?? 90, cyc = s.pace_cycle ?? 0.66;
+    walk(fig, s.at - (s.walk_lead ?? 0.16), cyc, 99, 1, s.steps ?? 0);
+    A(fig, { translate: ['0px 0px', `${-span}px 0px`, '0px 0px'] }, { at: s.at - (s.walk_lead ?? 0.16), dur: cyc * 6, iter: 9, ease: EASE.io });
+    A(sh, { scale: [1, .86, 1] }, { at: s.at - (s.walk_lead ?? 0.16), dur: cyc * 6, iter: 9, ease: EASE.io });
+  } else if (s.slump) {
+    A(fig, { translate: ['0px 0px', '0px 5px'] }, { at: s.at, dur: 1.1, ease: EASE.out });
+  } else if (s.sway !== false) {
+    A(fig, { translate: ['0px 0px', '0px -6px', '0px 0px'] }, { at: s.at, dur: 2.2, ease: EASE.io, iter: 99 });
+  }
+  if (s.wave != null) {                                  // one arm goes up to greet whoever just walked in
+    const arm = fig.querySelector('.fg-arm.r'), tw = s.at + s.wave;
+    A(arm, { rotate: ['10deg', '128deg'] }, { at: tw, dur: .26, ease: EASE.back });
+    A(arm, { rotate: ['128deg', '150deg', '128deg'] }, { at: tw + 0.26, dur: .4, iter: 4, ease: EASE.io });
+    cue(tw, 'pop');
+  }
   if (s.items) {                                         // lime checks are a CTA-family element and allowed here
     const box = $('div', 'sh-items', st), lead = s.lead ?? 0.25, step = s.step ?? 0.52;
     s.items.forEach((x, i) => {
@@ -882,6 +919,25 @@ S.shop = s => {
       cue(a, 'ding', { i });
     });
   }
+  (s.guests || []).forEach((g, i) => {                   // each guest walks in through the door and takes a seat
+    const t0 = s.at + (g.t ?? 0.2 + i * 0.45), sc = g.scale ?? 0.86;
+    const gf = figure(room, ''), seat = g.x ?? (tables[i % tables.length] + (i % 2 ? 120 : -30));
+    gf.style.cssText += `left:${DOOR_X - 84}px;margin-left:0;bottom:224px;top:auto;scale:${sc};transform-origin:50% 100%`;
+    const travel = seat - DOOR_X, dur = Math.max(0.5, Math.abs(travel) / 300);
+    showBetween(gf, t0);
+    A(gf, { opacity: [0, 1] }, { at: t0, dur: .18, ease: EASE.lin });
+    A(gf, { translate: ['0px 0px', `${travel}px 0px`] }, { at: t0, dur, ease: EASE.lin });
+    walk(gf, t0, 0.56, Math.ceil(dur / 0.56), 1, Math.min(dur, 0.9));
+    const ts = t0 + dur;                                 // sits: both thighs swing forward, the body drops onto the stool
+    if (g.sit === false) { cue(ts, 'tick', { i }); return; }
+    A(gf.querySelector('.fg-body'), { translate: ['0 0', '0 34px'] }, { at: ts, dur: .32, ease: EASE.out });
+    A(gf.querySelector('.fg-leg.l'), { rotate: ['26deg', '50deg'] }, { at: ts, dur: .32, ease: EASE.out });
+    A(gf.querySelector('.fg-leg.r'), { rotate: ['-26deg', '38deg'] }, { at: ts, dur: .32, ease: EASE.out });
+    A(gf.querySelector('.fg-arm.l'), { rotate: ['-24deg', '20deg'] }, { at: ts, dur: .32, ease: EASE.out });
+    A(gf.querySelector('.fg-arm.r'), { rotate: ['24deg', '32deg'] }, { at: ts, dur: .32, ease: EASE.out });
+    cue(t0, 'swish', { i });
+    cue(ts + 0.3, 'tick', { i });
+  });
 };
 /* street: the shop seen from outside while people stream past it. One thing moves — the passers-by —
    and not one of them turns in. The clock above the door runs fast so time is felt, not stated. */
@@ -890,14 +946,15 @@ S.street = s => {
   const front = $('div', 'str-front', st);
   $('div', 'str-awn', front);
   const win = $('div', 'str-win', front);
-  const fig = figure(win, 'dim'); fig.style.cssText += 'width:104px;height:182px;bottom:-16px;top:auto;margin-left:-52px';
+  const fig = figure(win, 'dim'); fig.style.cssText += 'width:116px;height:203px;bottom:-18px;top:auto;margin-left:-58px';
+  if (s.inside_walk !== false) walk(fig, s.at - 0.4, 0.72);   // behind glass: seen, not heard
   $('div', 'str-door', front);
   const clock = $('div', 'str-clock', st);
   const hh = $('u', 'h', clock), mm = $('u', 'm', clock);
   tick(t => { const u = Math.max(0, t - s.at); hh.style.rotate = (u * 90) + 'deg'; mm.style.rotate = (u * 1080) + 'deg'; });
-  const walk = $('div', 'str-walk', st), n = s.count ?? 9, r = rng(s.seed ?? 7);
+  const walkbox = $('div', 'str-walk', st), n = s.count ?? 9, r = rng(s.seed ?? 7);
   for (let k = 0; k < n; k++) {
-    const p = $('div', 'str-p', walk), sc = 0.78 + r() * 0.5, t0 = s.at - 0.6 + k * ((s.dur + 0.6) / n) * (0.72 + r() * 0.3);
+    const p = $('div', 'str-p', walkbox), sc = 0.78 + r() * 0.5, t0 = s.at - 0.6 + k * ((s.dur + 0.6) / n) * (0.72 + r() * 0.3);
     $('b', '', p); $('i', '', p);                        // head and body of one passer-by
     p.style.scale = sc; p.style.opacity = String(0.5 + sc * 0.4); p.style.zIndex = String(Math.round(sc * 10));
     A(p, { translate: ['0px 0px', '1500px 0px'] }, { at: t0, dur: 1.5 + r() * 0.9, ease: EASE.lin });
@@ -906,13 +963,13 @@ S.street = s => {
   }
 };
 /* map: the neighbourhood. Every other place is on it; his is the one pin that is not lit.
-   `light_at` turns his pin on, `walk_at` brings one person to it. */
+   `light_at` turns his pin on. */
 S.map = s => {
   const { st } = fgStage(s);
   const card = $('div', 'mp-card', st), r = rng(s.seed ?? 11);
-  const MX = 410, MY = 280;                              // centre of the card: his own pin never moves
+  const MX = 450, MY = 310;                              // centre of the card: his own pin never moves
   const others = [];
-  const spots = [[-300,-150],[-170,-190],[-40,-160],[110,-180],[250,-120],[-320,0],[-180,-40],[150,-30],[290,10],[-280,130],[-130,110],[30,150],[170,120],[300,160],[-60,-60],[220,-70]];
+  const spots = [[-330,-170],[-190,-210],[-40,-180],[120,-200],[280,-140],[-350,10],[-200,-50],[170,-40],[320,20],[-310,150],[-150,130],[30,170],[190,140],[330,180],[-70,-70],[240,-80]];
   spots.forEach((p, i) => {
     const pin = $('div', 'mp-pin', card);
     pin.style.left = (MX + p[0]) + 'px'; pin.style.top = (MY + p[1]) + 'px';
@@ -928,19 +985,13 @@ S.map = s => {
   const tl = s.light_at != null ? s.at + s.light_at : Infinity;
   if (tl < Infinity) {
     classAt(mine, 'on', tl);
-    A(mine, { scale: [1, 1.35, 1] }, { at: tl, dur: .4, ease: EASE.back });
+    A(mine, { scale: [1, 1.4, 1] }, { at: tl, dur: .44, ease: EASE.back });
     const ring = $('div', 'mp-ring', card); ring.style.left = MX + 'px'; ring.style.top = MY + 'px';
-    showBetween(ring, tl, tl + 0.6); A(ring, { scale: [.4, 3], opacity: [.9, 0] }, { at: tl, dur: .6 });
+    showBetween(ring, tl, tl + 0.7); A(ring, { scale: [.4, 3.4], opacity: [.9, 0] }, { at: tl, dur: .7 });
+    const ring2 = $('div', 'mp-ring', card); ring2.style.left = MX + 'px'; ring2.style.top = MY + 'px';
+    showBetween(ring2, tl + 0.2, tl + 0.9); A(ring2, { scale: [.4, 3.4], opacity: [.7, 0] }, { at: tl + 0.2, dur: .7 });
     cue(tl, 'ding', { i: 3 });
-    others.forEach((p, i) => { const a = tl + 0.1 + i * 0.03; A(p, { opacity: [.12, .5] }, { at: a, dur: .3 }); });
-  }
-  if (s.walk_at != null) {
-    const tw = s.at + s.walk_at, g = $('div', 'mp-guest', card);
-    g.style.left = (MX - 27) + 'px'; g.style.top = (MY - 120) + 'px';
-    showBetween(g, tw);
-    A(g, { translate: ['-300px 150px', '0px 46px'], opacity: [0, 1] }, { at: tw, dur: .9, ease: EASE.io });
-    A(g, { scale: [1, 0] }, { at: tw + 0.95, dur: .2, ease: EASE.in });
-    cue(tw, 'swish'); cue(tw + 1.0, 'pop');
+    others.forEach((p, i) => A(p, { opacity: [.12, .85] }, { at: tl + 0.1 + i * 0.03, dur: .3 }));  // the map comes back to life around him
   }
 };
 
