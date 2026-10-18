@@ -7,7 +7,7 @@
   "service": "search",
   "ending": "cta",
   "kind": "story",
-  "topic": "A cafe owner does everything right inside, but nobody on the street knows the place exists. On the map of the neighbourhood every other place is lit and his is not. One fix, and the street walks in and fills his tables.",
+  "topic": "A cafe owner does everything right inside, goes out on the street to find out why nobody comes in, and climbs up to look. On the map of the neighbourhood every other place is lit and his is not. One fix, and the street walks in and takes his tables. The guests are in zip's CTA lime.",
   "duration": 18,
   "cover_at": 0.5,
   "audio": {
@@ -17,122 +17,553 @@
   },
   "scenes": [
     {
-      "type": "shop",
-      "dur": 1.4,
+      "type": "cafe_in",
+      "dur": 1.5,
       "lines": [
         "Empty. Again."
       ],
-      "sign": "OPEN",
       "size": 170,
-      "pace": true,
-      "pace_by": 95,
-      "pace_cycle": 0.64,
-      "steps": 1.4
+      "cast": [
+        {
+          "x": 650,
+          "d": -1,
+          "at": -0.35,
+          "steps": 1.5,
+          "segs": [
+            {
+              "do": "walk",
+              "to": [
+                446,
+                660
+              ],
+              "cycle": 0.64
+            },
+            {
+              "do": "stand",
+              "dur": 99,
+              "look": [
+                [
+                  0,
+                  -1
+                ],
+                [
+                  0.3,
+                  1
+                ],
+                [
+                  0.72,
+                  -1
+                ]
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
-      "type": "shop",
-      "dur": 1.8,
+      "type": "cafe_in",
+      "dur": 1.5,
+      "cut": true,
       "lines": [
         "He did everything right."
       ],
       "size": 140,
-      "pace": true,
-      "pace_by": 70,
-      "pace_cycle": 0.58,
-      "items": [
+      "ticks": [
         "Clean.",
         "Stocked.",
         "Open."
       ],
-      "lead": 0.2,
-      "step": 0.5
+      "lead": 0.15,
+      "step": 0.38,
+      "cast": [
+        {
+          "x": 446,
+          "d": -1,
+          "at": -0.2,
+          "segs": [
+            {
+              "do": "walk",
+              "to": [
+                386,
+                660
+              ],
+              "cycle": 0.64
+            },
+            {
+              "do": "wipe",
+              "at": [
+                322,
+                562
+              ],
+              "dur": 99,
+              "tilt": 0.8,
+              "dip": 8
+            }
+          ]
+        }
+      ]
     },
     {
-      "type": "street",
-      "dur": 2.6,
-      "count": 10,
-      "seed": 7
+      "type": "cafe_out",
+      "dur": 2.4,
+      "passers": {
+        "count": 9,
+        "seed": 7,
+        "pattern": [
+          0,
+          0,
+          1
+        ]
+      },
+      "cast": [
+        {
+          "x": 610,
+          "g": 694,
+          "d": -1,
+          "at": -0.3,
+          "depth": 0.003,
+          "ref": 694,
+          "steps": 1.6,
+          "segs": [
+            {
+              "do": "circle",
+              "c": [
+                450,
+                694
+              ],
+              "r": [
+                160,
+                24
+              ],
+              "from": 0,
+              "sweep": 270,
+              "cycle": 0.6
+            },
+            {
+              "do": "stand",
+              "dur": 99,
+              "look": [
+                [
+                  0,
+                  1
+                ],
+                [
+                  0.16,
+                  -1
+                ]
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
-      "type": "shop",
-      "dur": 1.4,
+      "type": "cafe_out",
+      "dur": 2.1,
       "lines": [
         "Nobody came."
       ],
       "size": 170,
-      "dim": true,
-      "slump": true,
-      "cup": true
+      "passers": {
+        "count": 7,
+        "seed": 19,
+        "pattern": [
+          0
+        ]
+      },
+      "cast": [
+        {
+          "x": 668,
+          "g": 664,
+          "d": 1,
+          "at": -0.05,
+          "depth": 0.003,
+          "ref": 694,
+          "segs": [
+            {
+              "do": "stand",
+              "dur": 0.4,
+              "look": [
+                [
+                  0,
+                  1
+                ],
+                [
+                  0.22,
+                  -1
+                ]
+              ]
+            },
+            {
+              "do": "walk",
+              "path": [
+                [
+                  612,
+                  686
+                ],
+                [
+                  482,
+                  686
+                ]
+              ],
+              "cycle": 0.6
+            },
+            {
+              "do": "hop",
+              "to": [
+                404,
+                662
+              ],
+              "up": 76,
+              "dur": 0.46
+            },
+            {
+              "do": "shade",
+              "dur": 99,
+              "look": [
+                [
+                  0,
+                  -1
+                ],
+                [
+                  0.22,
+                  1
+                ]
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
       "type": "map",
-      "dur": 2.6,
+      "dur": 1.7,
       "lines": [
         "He wasn't bad."
       ],
       "size": 160,
       "seed": 11,
-      "lead": 0.2,
-      "step": 0.07
+      "lead": 0.15,
+      "step": 0.06
     },
     {
       "type": "map",
-      "dur": 1.4,
+      "dur": 1.3,
+      "cut": true,
       "lines": [
         "He was invisible."
       ],
       "size": 160,
       "seed": 11,
       "others": "on",
-      "dim_others": 0.12
+      "dim_others": 0.08
     },
     {
       "type": "map",
-      "dur": 1.6,
+      "dur": 1.3,
+      "cut": true,
       "turn": true,
-      "turn_at": 0.5,
+      "turn_at": 0.35,
       "lines": [
         "One fix."
       ],
       "size": 180,
       "seed": 11,
       "others": "on",
-      "light_at": 0.5
+      "dim_others": 0.01,
+      "light_at": 0.35
     },
     {
-      "type": "shop",
-      "dur": 2.7,
+      "type": "cafe_out",
+      "dur": 1.6,
       "lines": [
         "The street walked in."
       ],
       "size": 140,
-      "sway": false,
-      "wave": 1.7,
-      "guests": [
+      "passers": {
+        "count": 2,
+        "seed": 31,
+        "pattern": [
+          1
+        ]
+      },
+      "cast": [
         {
-          "t": 0.1,
-          "x": 166,
-          "scale": 0.88
+          "ink": "guest",
+          "sc": 1.25,
+          "g": 664,
+          "d": 1,
+          "depth": 0.003,
+          "ref": 694,
+          "x": 250,
+          "at": -1.8,
+          "seed": 1.1,
+          "segs": [
+            {
+              "do": "walk",
+              "to": [
+                664,
+                664
+              ],
+              "cycle": 0.56
+            },
+            {
+              "do": "enter",
+              "dur": 0.3
+            }
+          ]
         },
         {
-          "t": 0.6,
-          "x": 416,
-          "scale": 0.82
+          "ink": "guest",
+          "sc": 1.25,
+          "g": 664,
+          "d": 1,
+          "depth": 0.003,
+          "ref": 694,
+          "x": 180,
+          "at": -1.4,
+          "seed": 2.9,
+          "segs": [
+            {
+              "do": "walk",
+              "to": [
+                664,
+                664
+              ],
+              "cycle": 0.56
+            },
+            {
+              "do": "enter",
+              "dur": 0.3
+            }
+          ]
         },
         {
-          "t": 1.1,
-          "x": 620,
-          "scale": 0.9,
-          "sit": false
+          "ink": "guest",
+          "sc": 1.25,
+          "g": 664,
+          "d": 1,
+          "depth": 0.003,
+          "ref": 694,
+          "x": 40,
+          "at": -0.95,
+          "seed": 4.1,
+          "segs": [
+            {
+              "do": "walk",
+              "to": [
+                650,
+                664
+              ],
+              "cycle": 0.56
+            },
+            {
+              "do": "enter",
+              "dur": 0.3
+            }
+          ]
+        },
+        {
+          "ink": "guest",
+          "sc": 1.25,
+          "g": 664,
+          "d": 1,
+          "depth": 0.003,
+          "ref": 694,
+          "x": -140,
+          "at": -0.4,
+          "seed": 5.3,
+          "segs": [
+            {
+              "do": "walk",
+              "to": [
+                640,
+                664
+              ],
+              "cycle": 0.58
+            }
+          ]
+        },
+        {
+          "ink": "guest",
+          "sc": 1.25,
+          "g": 664,
+          "d": 1,
+          "depth": 0.003,
+          "ref": 694,
+          "x": -160,
+          "at": 0.15,
+          "seed": 6.7,
+          "segs": [
+            {
+              "do": "walk",
+              "to": [
+                640,
+                664
+              ],
+              "cycle": 0.56
+            }
+          ]
+        },
+        {
+          "x": 792,
+          "g": 668,
+          "d": -1,
+          "at": 0,
+          "depth": 0.003,
+          "ref": 694,
+          "segs": [
+            {
+              "do": "wave",
+              "dur": 99
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "cafe_in",
+      "dur": 2.4,
+      "cut": true,
+      "hold_head": true,
+      "lines": [
+        "The street walked in."
+      ],
+      "size": 140,
+      "lamps": "lit",
+      "lit_at": 0.02,
+      "door": "open",
+      "cups": [
+        {
+          "x": 280,
+          "t": 0.75
+        },
+        {
+          "x": 510,
+          "t": 2.05
+        }
+      ],
+      "cast": [
+        {
+          "layer": "counterBack",
+          "x": 832,
+          "d": -1,
+          "at": 0,
+          "e": 48,
+          "segs": [
+            {
+              "do": "wave",
+              "dur": 0.9
+            },
+            {
+              "do": "wipe",
+              "at": [
+                786,
+                486
+              ],
+              "tilt": 0.15,
+              "dip": 4,
+              "dur": 99
+            }
+          ]
+        },
+        {
+          "ink": "guest",
+          "sc": 1.3,
+          "x": 96,
+          "d": 1,
+          "at": -0.72,
+          "segs": [
+            {
+              "do": "walk",
+              "to": [
+                196,
+                660
+              ],
+              "cycle": 0.56
+            },
+            {
+              "do": "sit",
+              "seat": [
+                210,
+                614
+              ],
+              "table": [
+                280,
+                566
+              ],
+              "dur": 0.36
+            }
+          ]
+        },
+        {
+          "ink": "guest",
+          "sc": 1.3,
+          "x": 96,
+          "d": 1,
+          "at": -0.2,
+          "seed": 2.9,
+          "segs": [
+            {
+              "do": "walk",
+              "to": [
+                426,
+                660
+              ],
+              "cycle": 0.56
+            },
+            {
+              "do": "sit",
+              "seat": [
+                440,
+                614
+              ],
+              "table": [
+                510,
+                566
+              ],
+              "dur": 0.36
+            }
+          ]
+        },
+        {
+          "ink": "guest",
+          "sc": 1.3,
+          "x": 96,
+          "d": 1,
+          "at": 0.45,
+          "appear": 0,
+          "bell": true,
+          "seed": 4.1,
+          "segs": [
+            {
+              "do": "walk",
+              "to": [
+                652,
+                660
+              ],
+              "cycle": 0.48
+            },
+            {
+              "do": "stand",
+              "dur": 99,
+              "look": [
+                [
+                  0,
+                  1
+                ]
+              ]
+            }
+          ]
         }
       ]
     },
     {
       "type": "end",
-      "dur": 2.5,
+      "dur": 2.2,
       "tagline": "Systems that sell.",
       "cta": "Get the free check"
     }
   ],
-  "caption": "He had the cleanest cafe on the street.\n\nThe tables were set, the lights were on, the door was unlocked. People still walked past it all day.\n\nThe problem was never the cafe. It was that nobody searching the neighbourhood could find it. Every other place showed up. His didn't.\n\nThat part is fixable, and it is usually the cheapest thing on the list.\n\nWhat would someone type to find a business like yours?"
+  "caption": "He had the cleanest cafe on the street.\n\nThe tables were set, the lights were on, the door was open. He even went outside to see what was wrong. People still walked past it all day.\n\nThe problem was never the cafe. It was that nobody searching the neighbourhood could find it. Every other place showed up. His didn't.\n\nThat part is fixable, and it is usually the cheapest thing on the list.\n\nWhat would someone type to find a business like yours?"
 }

@@ -316,6 +316,12 @@ def build(meta, events, cfg=None):
         elif k == "step":                                 # counting up: one note higher each time
             scale = (0, 3, 5, 7, 10, 12, 15)
             place(sfx, bell(midi(root + 36 + scale[i % len(scale)]), 0.5, 0.7), t, 0.34, (i - 2) / 5.0); place(sfx, tom(150, 80, 0.14), t, 0.4)
+        elif k == "foot":                                 # one soft footstep (not "step", which is a rising note)
+            place(sfx, tom(105, 62, 0.07), t, 0.2, pan * 0.5); place(sfx, lp(noise_tick(rng, 0.018, 300, 2400), 2400), t, 0.1, pan * 0.5)
+        elif k == "doorbell":                             # the little bell over a shop door: two notes, close together
+            place(sfx, bell(midi(root + 48 + 7), 0.7, 1.25), t, 0.22, -0.3); place(sfx, bell(midi(root + 48 + 12), 0.6, 1.25), t + 0.07, 0.18, -0.3)
+        elif k == "land":                                 # feet landing after a hop
+            place(sfx, tom(118, 58, 0.16), t, 0.5); place(sfx, lp(noise_tick(rng, 0.03, 200, 2000), 2000), t, 0.2)
         elif k == "key":
             place(sfx, noise_tick(rng, 0.006, 2500, 8000), t, 0.16, rng.uniform(-0.3, 0.3))
         elif k == "tick":

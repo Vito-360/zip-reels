@@ -79,7 +79,7 @@ function sceneRoot(s, cls) {
   const root = $('div', 'layer ' + (cls || ''), stage);
   const end = s.at + s.dur, next = scenes[s.i + 1];
   showBetween(root, s.at, end);
-  if (next && !KIN && next.type !== 'flash' && s.type !== 'flash') A(root, { opacity: [1, 0] }, { at: end - 0.14, dur: 0.14, ease: EASE.lin });
+  if (next && !KIN && next.type !== 'flash' && s.type !== 'flash' && !next.cut) A(root, { opacity: [1, 0] }, { at: end - 0.14, dur: 0.14, ease: EASE.lin });   // `cut`: a hard cut into the next scene, no dip
   return root;
 }
 
@@ -832,135 +832,310 @@ S.landing = s => {
   } else showBetween(btn, Infinity);
 };
 
-/* ------------------------------------------------------------------ figure scenes (shop / street / map)
-   One small figure carries the story. FIGURE is written once and every scene reuses that exact markup,
-   so the character cannot drift between cuts: same proportions, same stroke, same colours throughout.
-   Arms and legs are their own groups turning about the shoulder and the hip, so the one figure can stand,
-   walk, pace or slump. Layout: headline at the top of the safe area, the scene in a 960x960 area below. */
-const FIGURE = `<svg viewBox="0 0 120 210" aria-hidden="true"><g class="fg-body">
-<g class="fg-leg l"><path class="lm" d="M60 130 L60 188"/></g>
-<g class="fg-leg r"><path class="lm" d="M60 130 L60 188"/></g>
-<g class="fg-arm l"><path class="lm" d="M60 72 L60 122"/></g>
-<g class="fg-arm r"><path class="lm" d="M60 72 L60 122"/></g>
-<path class="lm" d="M60 50 L60 130"/>
-<circle class="hd" cx="60" cy="27" r="21"/>
-</g></svg>`;
-function figure(parent, cls) { const f = $('div', 'figure ' + (cls || ''), parent); f.innerHTML = FIGURE; return f; }
-/* walk(): one walk cycle on the figure's own limbs, repeated. `at` is when the stride starts, `cycle` its
-   length in seconds. Legs swing in opposition, arms counter them, and the body lifts twice per cycle. */
-function walk(fig, at, cycle = 0.62, iter = 99, amp = 1, sound = 0) {
-  const q = s => fig.querySelector(s), o = { at, dur: cycle, iter, ease: EASE.io };
-  const sw = (el, a) => A(el, { rotate: [`${a}deg`, `${-a}deg`, `${a}deg`] }, o);
-  sw(q('.fg-leg.l'), 26 * amp); sw(q('.fg-leg.r'), -26 * amp);
-  sw(q('.fg-arm.l'), -20 * amp); sw(q('.fg-arm.r'), 20 * amp);
-  A(q('.fg-body'), { translate: ['0 0', `0 ${-5 * amp}px`, '0 0', `0 ${-5 * amp}px`, '0 0'] }, { at, dur: cycle, iter, ease: EASE.io });
-  /* Footsteps are only sounded for `sound` seconds. A figure that keeps walking for the whole scene would
-     otherwise fire a cue twice per cycle and bury the music under a rattle of steps. */
-  for (let t = Math.max(at, 0), k = 0; t < at + sound && k < 12; k++, t = at + k * cycle * 0.5) cue(t, 'step', { i: k % 2 });
+/* ------------------------------------------------------------------ the cafe story: one set, one cast
+   Two sets (inside the cafe, outside on the street) drawn in SVG on one floor line, and a cast of stick
+   figures moved by a small rig. Every figure is built from the same RIG, so the owner looks the same in
+   every scene. Feet are planted: while a foot carries the weight it stays where it landed, and the body
+   travels exactly one stride per step, so nobody walks on the spot, slides or floats. Knees and elbows
+   are solved from where the foot and the hand must be (two-bone IK), so a figure can sit exactly on a
+   stool or stand exactly on a ledge. The set is 960x720 at x=60, y=560 of the frame; the floor (y=660)
+   lands at frame y=1220, inside the area Instagram leaves uncovered. */
+const SVGNS = 'http://www.w3.org/2000/svg';
+const sv = (tag, attrs, parent) => { const e = document.createElementNS(SVGNS, tag); for (const k in attrs || {}) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+const lerp = (a, b, u) => a + (b - a) * u;
+const smooth = u => { u = clamp(u, 0, 1); return u * u * (3 - 2 * u); };
+const easeOut = u => 1 - Math.pow(1 - clamp(u, 0, 1), 3);
+const FLOOR = 660;
+/* figure proportions in figure units; actors scale them (owner 1.35 ≈ 270 px tall) */
+const RIG = { thigh: 43, shin: 41, upper: 27, fore: 25, torso: 80, shoulder: 58, head: 21, headAt: 103, stand: 82, walk: 78.5, stroke: 10.5, stride: 108, lift: 16 };
+const INK = {
+  owner: ['#FAFAFA', '#a6a6ad'],     // near limbs, far limbs (darker, so the stride reads)
+  guest: ['#C8FF3D', '#88aa27'],     // zip's CTA lime: the people who came because of the fix
+  street: ['#4b4b54', '#303037']
+};
+function ik2(ax, ay, bx, by, l1, l2, bend) {
+  let dx = bx - ax, dy = by - ay, d = Math.hypot(dx, dy);
+  const max = l1 + l2 - 0.01;
+  if (d > max) { bx = ax + dx / d * max; by = ay + dy / d * max; dx = bx - ax; dy = by - ay; d = max; }
+  d = Math.max(d, Math.abs(l1 - l2) + 0.01);
+  const a = Math.acos(clamp((l1 * l1 + d * d - l2 * l2) / (2 * l1 * d), -1, 1));
+  const ang = Math.atan2(dy, dx) + bend * a;
+  return [ax + Math.cos(ang) * l1, ay + Math.sin(ang) * l1, bx, by];
 }
-function fgStage(s) {                                   // headline high, then the 960×960 area the scene plays in
+/* mkPath: a polyline walked by arc length; each piece remembers which way the figure faces */
+function mkPath(pts) {
+  const P = [], cum = [0];
+  pts.forEach(p => { if (!P.length || Math.hypot(p[0] - P[P.length - 1][0], p[1] - P[P.length - 1][1]) > 0.5) P.push([p[0], p[1]]); });
+  if (P.length === 1) P.push([P[0][0] + 0.01, P[0][1]]);
+  for (let i = 1; i < P.length; i++) cum.push(cum[i - 1] + Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]));
+  const L = cum[cum.length - 1], face = [];
+  let last = P[1][0] < P[0][0] ? -1 : 1;
+  for (let i = 1; i < P.length; i++) { const dx = P[i][0] - P[i - 1][0], len = (cum[i] - cum[i - 1]) || 1; if (Math.abs(dx / len) > 0.3) last = dx > 0 ? 1 : -1; face.push(last); }
+  const at = s => {
+    s = clamp(s, 0, L);
+    let i = 1; while (i < cum.length - 1 && cum[i] < s) i++;
+    const len = (cum[i] - cum[i - 1]) || 1, u = (s - cum[i - 1]) / len;
+    return { x: lerp(P[i - 1][0], P[i][0], u), y: lerp(P[i - 1][1], P[i][1], u), tx: (P[i][0] - P[i - 1][0]) / len, d: face[i - 1] };
+  };
+  return { L, at, end: P[P.length - 1] };
+}
+const arcPts = (c, r, from, sweep, n = 60) => Array.from({ length: n + 1 }, (_, k) => { const a = (from + sweep * k / n) * Math.PI / 180; return [c[0] + r[0] * Math.cos(a), c[1] + r[1] * Math.sin(a)]; });
+
+/* poses: hip (hx, hy), torso tilt (radians, forward), facing d, eye (−1…1, 0 = looking at us), scale,
+   opacity, and the targets the feet and hands must reach (near limb first) */
+const shoulderOf = p => [p.hx + p.d * Math.sin(p.tilt) * RIG.shoulder * p.sc, p.hy - Math.cos(p.tilt) * RIG.shoulder * p.sc];
+const headOf = p => [p.hx + p.d * Math.sin(p.tilt) * RIG.headAt * p.sc, p.hy - Math.cos(p.tilt) * RIG.headAt * p.sc];
+function standPose(A, x, g, d, t, o = {}) {
+  const sc = A.scaleAt(g), br = Math.sin(t * 2.3 + A.seed) * 1.2 * sc, f = g - (o.e || 0);   // e: standing on something e px high
+  const fd = o.fd ?? d;                                   // feet and hands keep the side they had; only the look turns
+  const p = { hx: x, hy: f - RIG.stand * sc + (o.dip || 0) * sc + br * 0.3, tilt: o.tilt || 0.02, d, eye: o.eye ?? d, sc, op: 1,
+    feet: o.feet ? o.feet.map(q => [q[0], f]) : [[x + fd * 9 * sc, f], [x - fd * 8 * sc, f]] };
+  const [sx, sy] = shoulderOf(p);
+  p.hands = [[sx + fd * 7 * sc, sy + 47 * sc + br], [sx - fd * 6 * sc, sy + 47 * sc + br]];
+  return p;
+}
+function walkPose(A, path, s, t) {
+  const S = RIG.stride * A.scaleAt(path.at(0).y), P = path.at(s), sc = A.scaleAt(P.y), d = P.d;
+  const feet = [0, 0.5].map(o => {
+    const u = s / S + o, n = Math.floor(u), f = u - n, plant = k => path.at((k - o + 0.25) * S);
+    if (f < 0.5) { const q = plant(n); return [q.x, q.y]; }
+    const a = plant(n), b = plant(n + 1), w = smooth((f - 0.5) * 2);
+    return [lerp(a.x, b.x, w), lerp(a.y, b.y, w) - Math.sin(Math.PI * (f - 0.5) * 2) * RIG.lift * sc];
+  });
+  const u0 = s / S, p = { hx: P.x, hy: P.y - RIG.walk * sc + Math.cos(4 * Math.PI * u0) * 2.6 * sc, tilt: 0.07, d, eye: P.tx, sc, op: 1, feet };
+  const [sx, sy] = shoulderOf(p), w = Math.cos(2 * Math.PI * u0);          // +1 while the near foot is ahead
+  p.hands = [-1, 1].map(k => { const phi = k * w * 0.5; return [sx + d * Math.sin(phi) * 49 * sc, sy + Math.cos(phi) * 49 * sc]; });
+  return p;
+}
+function lerpPose(a, b, u) {
+  const L2 = (x, y) => [lerp(x[0], y[0], u), lerp(x[1], y[1], u)];
+  return { hx: lerp(a.hx, b.hx, u), hy: lerp(a.hy, b.hy, u), tilt: lerp(a.tilt, b.tilt, u), d: u < 0.5 ? a.d : b.d, eye: lerp(a.eye, b.eye, u),
+    sc: lerp(a.sc, b.sc, u), op: lerp(a.op, b.op, u), feet: [L2(a.feet[0], b.feet[0]), L2(a.feet[1], b.feet[1])], hands: [L2(a.hands[0], b.hands[0]), L2(a.hands[1], b.hands[1])] };
+}
+function drawFig(F, p) {
+  if (p.op <= 0.01) { F.g.style.display = 'none'; return; }
+  F.g.style.display = ''; F.g.setAttribute('opacity', p.op.toFixed(3));
+  const sc = p.sc, d = p.d >= 0 ? 1 : -1, [sx, sy] = shoulderOf(p), [cx, cy] = headOf(p), sw = (RIG.stroke * sc).toFixed(2);
+  const seg = (x, y, j) => `M${x.toFixed(1)} ${y.toFixed(1)}L${j[0].toFixed(1)} ${j[1].toFixed(1)}L${j[2].toFixed(1)} ${j[3].toFixed(1)}`;
+  const legs = p.feet.map(f => ik2(p.hx, p.hy, f[0], f[1], RIG.thigh * sc, RIG.shin * sc, -d));
+  const arms = p.hands.map(h => ik2(sx, sy, h[0], h[1], RIG.upper * sc, RIG.fore * sc, d));
+  F.legN.setAttribute('d', seg(p.hx, p.hy, legs[0])); F.legF.setAttribute('d', seg(p.hx, p.hy, legs[1]));
+  F.armN.setAttribute('d', seg(sx, sy, arms[0])); F.armF.setAttribute('d', seg(sx, sy, arms[1]));
+  const ny = cy + RIG.head * sc * 0.8, nx = cx + (p.hx - cx) * (RIG.head * 0.8 / RIG.headAt);
+  F.torso.setAttribute('d', `M${p.hx.toFixed(1)} ${p.hy.toFixed(1)}L${nx.toFixed(1)} ${ny.toFixed(1)}`);
+  [F.legN, F.legF, F.armN, F.armF, F.torso].forEach(e => e.setAttribute('stroke-width', sw));
+  F.head.setAttribute('cx', cx.toFixed(1)); F.head.setAttribute('cy', cy.toFixed(1)); F.head.setAttribute('r', (RIG.head * sc).toFixed(1));
+  F.eye.setAttribute('cx', (cx + p.eye * 9.5 * sc).toFixed(1)); F.eye.setAttribute('cy', (cy - 2.5 * sc).toFixed(1)); F.eye.setAttribute('r', (3.3 * sc).toFixed(2));
+}
+/* actor(): one figure and its script. `segs` run one after another from `at` (seconds from the scene
+   start, may be negative so the figure is already moving on the first frame):
+     walk {to | path, cycle}   circle {c, r, from, sweep, cycle}   stand {dur, look:[[t, dir]…], tilt}
+     hop {to, dur}   sit {seat, table, dur}   wipe {at, dur}   wave {dur}   shade {dur, look}   enter {dur}
+   Each segment eases in from where the previous one ended, so poses never jump. */
+function actor(layer, a, s) {
+  const A = { sc: a.sc ?? 1.35, depth: a.depth ?? 0, ref: a.ref ?? (a.g ?? FLOOR), seed: a.seed ?? 1.7 };
+  A.scaleAt = y => A.sc * (1 + (y - A.ref) * A.depth);
+  const ink = INK[a.ink || 'owner'], g = sv('g', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', fill: 'none' }, layer);
+  const F = { g, armF: sv('path', { stroke: ink[1] }, g), legF: sv('path', { stroke: ink[1] }, g), torso: sv('path', { stroke: ink[0] }, g),
+    legN: sv('path', { stroke: ink[0] }, g), armN: sv('path', { stroke: ink[0] }, g), head: sv('circle', { fill: ink[0] }, g), eye: sv('circle', { fill: '#000' }, g) };
+  const base = s.at + (a.at || 0), segs = [];
+  let cur = { x: a.x, g: a.g ?? FLOOR, d: a.d ?? 1, e: a.e || 0 }, t0 = 0;    // e: starts standing on something (a step behind the counter)
+  const steps = (T, from, dur) => { if (!a.steps) return; for (let k = 0; k * T / 2 < dur; k++) { const at = base + from + k * T / 2; if (at >= s.at && at < s.at + a.steps) cue(at, 'foot', { i: k }); } };
+  const dirAt = (look, d0, τ) => { let d = d0; (look || []).forEach(([lt, ld]) => { if (τ >= lt) d = ld; }); return d; };
+  const lookAt = (look, d0, τ) => { let d = d0, prev = d0, ts = -9; (look || []).forEach(([lt, ld]) => { if (τ >= lt) { if (ld !== d) { prev = d; ts = lt; } d = ld; } }); return { d, eye: lerp(prev, d, smooth((τ - ts) / 0.14)) }; };
+  const list = (a.segs || []).slice();
+  const last = list[list.length - 1];
+  if (!last || ['walk', 'circle', 'hop'].includes(last.do)) list.push({ do: 'stand', dur: 99 });
+  list.forEach((q, qi) => {
+    const c0 = { ...cur }, sg = { t0, blend: q.blend ?? 0.16 };
+    if (q.do === 'walk' || q.do === 'circle') {
+      const pts = q.do === 'walk' ? [[c0.x, c0.g], ...(q.path || [q.to])] : [[c0.x, c0.g], ...arcPts(q.c, q.r, q.from, q.sweep)];
+      const path = mkPath(pts), T = q.cycle ?? 0.62, v = RIG.stride * A.scaleAt(path.at(0).y) / T, dur = path.L / v;
+      sg.dur = dur; sg.walk = true; sg.pose = (τ, t) => walkPose(A, path, τ * v, t);
+      steps(T, t0, dur);
+      const e = path.at(path.L); cur = { x: e.x, g: e.y, d: e.d, e: 0 };
+    } else if (q.do === 'hop') {
+      const dur = q.dur ?? 0.46, [x1, g1] = q.to, e0 = c0.e || 0, e1 = q.up || 0, d = x1 >= c0.x ? 1 : -1;
+      sg.dur = dur; sg.blend = 0.1;
+      sg.pose = (τ, t) => {
+        const u = τ / dur;
+        if (u < 0.3) { const k = smooth(u / 0.3), p = standPose(A, c0.x, c0.g, d, t, { e: e0, dip: 12 * k, tilt: 0.25 * k }); const [sx, sy] = shoulderOf(p); p.hands = [[sx - d * 22 * p.sc * k, sy + 40 * p.sc], [sx - d * 26 * p.sc * k, sy + 38 * p.sc]]; return p; }
+        if (u < 0.8) {
+          const k = (u - 0.3) / 0.5, e = smooth(k), x = lerp(c0.x, x1, e), gy = lerp(c0.g - e0, g1 - e1, e) - Math.sin(Math.PI * k) * 40 * A.sc, sc = A.scaleAt(lerp(c0.g, g1, e));
+          const p = { hx: x, hy: gy - (RIG.stand - 10) * sc, tilt: 0.12, d, eye: d, sc, op: 1, feet: [[x + d * 10 * sc, gy - 6 * sc], [x - d * 4 * sc, gy - 12 * sc]] };
+          const [sx, sy] = shoulderOf(p); p.hands = [[sx + d * 28 * sc, sy - 12 * sc], [sx + d * 18 * sc, sy - 4 * sc]]; return p;
+        }
+        const k = (u - 0.8) / 0.2; return standPose(A, x1, g1, d, t, { e: e1, dip: 12 * Math.sin(Math.PI * k), tilt: 0.12 * (1 - k) });
+      };
+      cue(base + t0 + dur * 0.3, 'swish'); cue(base + t0 + dur * 0.8, 'land');
+      cur = { x: x1, g: g1, d, e: e1 };
+    } else if (q.do === 'sit') {
+      const dur = q.dur ?? 0.36, [sxx, syy] = q.seat, d = c0.d;
+      const seated = t => { const sc = A.scaleAt(FLOOR), p = { hx: sxx, hy: syy - 2 * sc + Math.sin(t * 2.3 + A.seed) * 0.6 * sc, tilt: 0.1, d, eye: d, sc, op: 1,
+        feet: q.feet ? [[q.feet[0], q.feet[1]], [q.feet[0] - d * 10 * sc, q.feet[1]]] : [[sxx + d * 44 * sc, FLOOR], [sxx + d * 33 * sc, FLOOR]] };
+        const [sx, sy] = shoulderOf(p);
+        p.hands = q.table ? [[q.table[0], q.table[1]], [q.table[0] - d * 16 * sc, q.table[1]]] : [[sx + d * 30 * sc, sy + 40 * sc], [sx + d * 22 * sc, sy + 42 * sc]];
+        return p; };
+      sg.dur = q.hold ?? 99; sg.blend = dur; sg.pose = (τ, t) => seated(t);
+      cue(base + t0 + dur, 'tick', { i: qi });
+      cur = { x: sxx, g: FLOOR, d };
+    } else {
+      const dur = q.dur ?? 0.6, d0 = q.d ?? c0.d, pv = segs[segs.length - 1];
+      let keep = null;
+      if (pv && pv.walk && q.do !== 'enter') {
+        const e = pv.pose(pv.dur, 0), pi = e.feet[0][1] >= e.feet[1][1] ? 0 : 1, pf = e.feet[pi], side = Math.sign(pf[0] - c0.x) || 1;
+        keep = []; keep[pi] = [clamp(pf[0], c0.x - 22 * e.sc, c0.x + 22 * e.sc), c0.g]; keep[1 - pi] = [c0.x - side * 9 * e.sc, c0.g];
+      }
+      sg.dur = dur;
+      if (q.do === 'wipe') sg.pose = (τ, t) => {
+        const p = standPose(A, c0.x, c0.g, d0, t, { e: c0.e, tilt: q.tilt ?? 0.6, dip: q.dip ?? 18, feet: keep }), w = τ * 2 * Math.PI * 1.7;
+        p.hands = [[q.at[0] + Math.cos(w) * 14 * p.sc, q.at[1] + Math.sin(w) * 3 * p.sc], [q.at[0] - d0 * 26 * p.sc, q.at[1] + 2]];
+        return p; };
+      else if (q.do === 'wave') sg.pose = (τ, t) => {
+        const p = standPose(A, c0.x, c0.g, d0, t, { e: c0.e, feet: keep }), [sx, sy] = shoulderOf(p), k = Math.min(1, τ / 0.2);
+        p.hands[0] = [sx + d0 * (16 + Math.sin(τ * 2 * Math.PI * 3.2) * 13 * k) * p.sc, sy - 46 * p.sc * k + 47 * p.sc * (1 - k)];
+        return p; };
+      else if (q.do === 'shade') sg.pose = (τ, t) => {
+        const L = lookAt(q.look, d0, τ), d = L.d, p = standPose(A, c0.x, c0.g, d, t, { e: c0.e, tilt: 0.06, eye: L.eye, fd: d0, feet: keep }), [hx, hy] = headOf(p);
+        p.hands = [[hx + d * 16 * p.sc, hy - 3 * p.sc], [p.hx - d * 14 * p.sc, p.hy - 14 * p.sc]];
+        return p; };
+      else if (q.do === 'enter') { sg.blend = 0.08; sg.pose = (τ, t) => {
+        const u = easeOut(τ / dur), p = standPose(A, c0.x, c0.g, d0, t, { eye: lerp(d0, 0, Math.min(1, τ / 0.1)) });
+        p.op = 1 - u; p.sc *= 1 - 0.12 * u; p.hy -= 10 * u; p.feet.forEach(f => { f[1] -= 10 * u; }); return p; };
+        if (base + t0 < s.at + s.dur) cue(base + t0 + 0.02, 'doorbell', { i: qi }); }   // only doors we can see
+      else sg.pose = (τ, t) => { const L = lookAt(q.look, d0, τ); return standPose(A, c0.x, c0.g, L.d, t, { e: c0.e, tilt: q.tilt, eye: L.eye, fd: d0, feet: keep }); };
+      cur = { ...c0, d: q.do === 'shade' || q.do === 'stand' ? dirAt(q.look, d0, 99) : d0 };
+    }
+    sg.t1 = t0 + sg.dur; t0 = sg.t1; segs.push(sg);
+  });
+  const poseAt = t => {
+    const τ = t - base;
+    let k = segs.findIndex(sg => τ < sg.t1); if (k < 0) k = segs.length - 1;
+    const sg = segs[k], tk = clamp(τ - sg.t0, 0, sg.dur);
+    let p = sg.pose(tk, t);
+    if (k > 0 && tk < sg.blend) { const pv = segs[k - 1]; p = lerpPose(pv.pose(pv.dur, t), p, smooth(tk / sg.blend)); }
+    if (a.appear != null) p.op *= clamp((τ - a.appear) / 0.22, 0, 1);
+    return p;
+  };
+  if (a.bell) cue(base + (a.appear || 0), 'doorbell');
+  tick(t => { if (t >= s.at - 1e-6 && t < s.at + s.dur) drawFig(F, poseAt(t)); });
+  return { poseAt };
+}
+/* street passers-by: grey figures on two lanes, both directions; none of them turns in */
+function passers(layers, s, o) {
+  const r = rng(o.seed ?? 7), n = o.count ?? 8, lanes = o.lanes || [{ g: 664, sc: 1.2, layer: 'back' }, { g: 732, sc: 1.48, layer: 'front' }];
+  const span = s.dur + 2.2, gap = span / n;
+  for (let k = 0; k < n; k++) {
+    const ln = lanes[(o.pattern || [0, 0, 1])[k % (o.pattern || [0, 0, 1]).length]], dir = r() < 0.5 ? 1 : -1, cyc = 0.6 + r() * 0.14;
+    actor(layers[ln.layer], { ink: 'street', sc: ln.sc * (0.95 + r() * 0.1), x: dir > 0 ? -200 : 1160, g: ln.g, d: dir, at: -2.2 + k * gap + r() * gap * 0.6,
+      seed: k * 1.3, segs: [{ do: 'walk', to: [dir > 0 ? 1160 : -200, ln.g], cycle: cyc }] }, s);
+  }
+}
+/* fgStage: the headline at the top of the safe area, then the 960x720 area the set is drawn in.
+   `hold_head` carries the same headline across a hard cut: no scale-in, no slam. */
+function fgStage(s) {
   const root = sceneRoot(s);
-  if ((s.lines || []).length) {                        // a scene may run without a headline, so the eye is free to watch
+  if ((s.lines || []).length) {
     const el = $('div', 'fg-head', root);
     s.lines.forEach((l, i) => { const ln = $('span', 'ln', el, l); if (s.chrome === i) ln.classList.add('chrome'); });
     fit(el, 940, s.size || 150, 70);
-    if (s.at > 0) A(el, { scale: [1.04, 1] }, { at: s.at, dur: .2 });
+    if (s.at > 0 && !s.hold_head) A(el, { scale: [1.04, 1] }, { at: s.at, dur: .2 });
   }
-  cue(s.at, s.at === 0 ? 'hit' : 'slam');
+  if (!s.hold_head) cue(s.at, s.at === 0 ? 'hit' : (s.lines || []).length ? 'slam' : 'swish');   // no headline, no slam
   const st = $('div', 'fg-stage', root);
   return { root, st };
 }
-const DOOR_X = 105, COUNTER_X = 780;                    // the cafe's two fixed points, in stage coordinates
-/* shop: inside the cafe. Door on the left, counter on the right, two tables between them. The owner works
-   behind the counter; `pace` walks him back and forth, `slump` drops his shoulders, `guests` brings people
-   in through the door to the tables. The tables are there from the first scene, so their emptiness reads. */
-S.shop = s => {
-  const { st } = fgStage(s);
-  const room = $('div', 'sh-room', st);
-  $('div', 'sh-floor', room);
-  $('div', 'sh-door', room);
-  const tables = [200, 450];          // stools sit at table ±; guests are placed on them, never on each other
-  tables.forEach(x => { const tb = $('div', 'sh-table', room); tb.style.left = x + 'px'; $('u', '', tb); $('s', '', tb); $('b', 'l', tb); $('b', 'r', tb); });
-  if (!s.items) {                                        // the shelf is dropped when the tick list needs the wall
-    const shelf = $('div', 'sh-shelf', room);
-    for (let k = 0; k < 4; k++) { const b = $('i', '', shelf); b.style.left = (20 + k * 86) + 'px'; b.style.height = (44 + (k % 3) * 18) + 'px'; }
-  }
-  const sh = $('div', 'fg-shadow', room);
-  sh.style.cssText += `left:${COUNTER_X - 60}px;bottom:238px;width:120px`;
-  const fig = figure(room, (s.dim ? 'dim ' : '') + (s.slump ? 'slump' : ''));
-  fig.style.cssText += `left:${COUNTER_X - 84}px;margin-left:0;bottom:230px;top:auto`;
-  $('div', 'sh-counter', room);
-  if (s.sign && !s.items) { const sg = $('div', 'sh-sign', room, s.sign); if (s.at > 0) A(sg, { opacity: [0, 1], scale: [.8, 1] }, { at: s.at + 0.1, dur: .26, ease: EASE.back }); }
-  if (s.cup) { const c = $('div', 'sh-cup', room); c.style.cssText += `left:${tables[0] + 48}px;bottom:272px`; }
-  if (s.pace) {                                          // he paces behind the counter: nothing else to do
-    const span = s.pace_by ?? 90, cyc = s.pace_cycle ?? 0.66;
-    walk(fig, s.at - (s.walk_lead ?? 0.16), cyc, 99, 1, s.steps ?? 0);
-    A(fig, { translate: ['0px 0px', `${-span}px 0px`, '0px 0px'] }, { at: s.at - (s.walk_lead ?? 0.16), dur: cyc * 6, iter: 9, ease: EASE.io });
-    A(sh, { scale: [1, .86, 1] }, { at: s.at - (s.walk_lead ?? 0.16), dur: cyc * 6, iter: 9, ease: EASE.io });
-  } else if (s.slump) {
-    A(fig, { translate: ['0px 0px', '0px 5px'] }, { at: s.at, dur: 1.1, ease: EASE.out });
-  } else if (s.sway !== false) {
-    A(fig, { translate: ['0px 0px', '0px -6px', '0px 0px'] }, { at: s.at, dur: 2.2, ease: EASE.io, iter: 99 });
-  }
-  if (s.wave != null) {                                  // one arm goes up to greet whoever just walked in
-    const arm = fig.querySelector('.fg-arm.r'), tw = s.at + s.wave;
-    A(arm, { rotate: ['10deg', '128deg'] }, { at: tw, dur: .26, ease: EASE.back });
-    A(arm, { rotate: ['128deg', '150deg', '128deg'] }, { at: tw + 0.26, dur: .4, iter: 4, ease: EASE.io });
-    cue(tw, 'pop');
-  }
-  if (s.items) {                                         // lime checks are a CTA-family element and allowed here
-    const box = $('div', 'sh-items', st), lead = s.lead ?? 0.25, step = s.step ?? 0.52;
-    s.items.forEach((x, i) => {
-      const it = $('div', 'sh-item', box, ''), ic = $('i', '', it); ic.innerHTML = CHECK;
-      $('span', '', it, x);
-      const a = s.at + lead + i * step;
-      showBetween(it, a); A(it, { opacity: [0, 1], translate: ['0 20px', '0 0'] }, { at: a, dur: .24 });
-      A(ic, { scale: [0, 1] }, { at: a + 0.04, dur: .26, ease: EASE.back });
+const LINE = '#26262b', PANEL = '#0D0D0F', PANEL2 = '#17171A';
+function setSvg(st, s) {
+  const svg = sv('svg', { viewBox: '0 0 960 720', width: 960, height: 720, class: 'cf-set' }, st);
+  const L = {}; ['back', 'door', 'counterBack', 'counter', 'stools', 'cast', 'front', 'top'].forEach(k => { L[k] = sv('g', {}, svg); });
+  return { svg, L };
+}
+/* cafe_in: inside. Door on the left, two tables with a stool each, the counter on the right with the
+   owner behind it when he is there. `door` "open" or a time it opens at, `lamps` "lit" (glow) or not,
+   `ticks` a row of checked items under the headline, `cups` [{x, t}] that appear on the tables. */
+S.cafe_in = s => {
+  const { root, st } = fgStage(s), { svg, L } = setSvg(st, s);
+  const defs = sv('defs', {}, svg), gid = 'glow' + s.i, rg = sv('radialGradient', { id: gid }, defs);
+  sv('stop', { offset: '0', 'stop-color': '#FAFAFA', 'stop-opacity': '.32' }, rg); sv('stop', { offset: '1', 'stop-color': '#FAFAFA', 'stop-opacity': '0' }, rg);
+  sv('line', { x1: -60, y1: FLOOR, x2: 1020, y2: FLOOR, stroke: LINE, 'stroke-width': 3 }, L.back);
+  const menu = sv('g', {}, L.back); sv('rect', { x: 382, y: 196, width: 150, height: 104, rx: 8, fill: PANEL, stroke: LINE, 'stroke-width': 3 }, menu);
+  [[402, 220, 84], [402, 244, 106], [402, 268, 70]].forEach(([x, y, w]) => sv('rect', { x, y, width: w, height: 8, rx: 4, fill: LINE }, menu));
+  const TABLES = [310, 540], lit = s.lamps === 'lit', tl = s.at + (s.lit_at ?? 0);   // stools at table − 100
+  TABLES.forEach((x, i) => {
+    sv('line', { x1: x, y1: 40, x2: x, y2: 112, stroke: LINE, 'stroke-width': 3 }, L.back);   // short cord: clears the tick row above
+    const glow = sv('ellipse', { cx: x, cy: 150, rx: 150, ry: 120, fill: `url(#${gid})`, opacity: 0 }, L.back);
+    const shade = sv('path', { d: `M${x - 38} 146L${x - 20} 112H${x + 20}L${x + 38} 146Z`, fill: PANEL2, stroke: LINE, 'stroke-width': 3, 'stroke-linejoin': 'round' }, L.back);
+    const bulb = sv('ellipse', { cx: x, cy: 148, rx: 14, ry: 5, fill: '#3a3a42' }, L.back);
+    if (lit) { tick(t => { const u = clamp((t - tl - i * 0.12) / 0.25, 0, 1); glow.setAttribute('opacity', u.toFixed(3)); bulb.setAttribute('fill', u > 0.5 ? '#FAFAFA' : '#3a3a42'); shade.setAttribute('stroke', u > 0.5 ? '#5c5c64' : LINE); }); cue(tl + i * 0.12, 'pop', { i }); }
+  });
+  /* door: frame, the dark opening, and the leaf that swings open */
+  sv('rect', { x: 20, y: 320, width: 150, height: 340, fill: '#000', stroke: LINE, 'stroke-width': 3 }, L.door);
+  const leaf = sv('g', {}, L.door);
+  sv('rect', { x: 24, y: 324, width: 142, height: 336, fill: PANEL, stroke: LINE, 'stroke-width': 3 }, leaf);
+  sv('rect', { x: 46, y: 352, width: 98, height: 120, rx: 4, fill: '#000', stroke: LINE, 'stroke-width': 3 }, leaf);
+  sv('circle', { cx: 146, cy: 500, r: 6, fill: '#3a3a42' }, leaf);
+  const td = s.door === 'open' ? -1 : (typeof s.door === 'number' ? s.at + s.door : Infinity);
+  tick(t => { const k = 1 - 0.84 * smooth((t - td) / 0.28); leaf.setAttribute('transform', `translate(22 0) scale(${k.toFixed(3)} 1) translate(-22 0)`); });
+  if (td > s.at && td < Infinity) cue(td, 'doorbell');
+  /* counter, shelf and machine */
+  sv('line', { x1: 722, y1: 330, x2: 936, y2: 330, stroke: LINE, 'stroke-width': 4 }, L.counterBack);
+  [[736, 34], [774, 46], [812, 30], [850, 42], [888, 36]].forEach(([x, h]) => sv('rect', { x, y: 328 - h, width: 26, height: h, rx: 3, fill: PANEL2, stroke: LINE, 'stroke-width': 2 }, L.counterBack));
+  sv('rect', { x: 690, y: 500, width: 254, height: 160, fill: PANEL, stroke: LINE, 'stroke-width': 3 }, L.counter);
+  sv('rect', { x: 676, y: 492, width: 282, height: 16, rx: 7, fill: LINE }, L.counter);
+  sv('rect', { x: 872, y: 424, width: 58, height: 68, rx: 7, fill: PANEL2, stroke: LINE, 'stroke-width': 3 }, L.counter);
+  sv('rect', { x: 884, y: 470, width: 10, height: 14, fill: LINE }, L.counter);
+  /* stools: the seat top is at y=614, where a seated figure's hip rests */
+  TABLES.forEach(x => { const c = x - 100; sv('line', { x1: c, y1: 618, x2: c, y2: FLOOR, stroke: LINE, 'stroke-width': 6 }, L.stools); sv('line', { x1: c - 18, y1: FLOOR - 2, x2: c + 18, y2: FLOOR - 2, stroke: LINE, 'stroke-width': 5, 'stroke-linecap': 'round' }, L.stools); sv('rect', { x: c - 27, y: 612, width: 54, height: 11, rx: 5.5, fill: PANEL2, stroke: LINE, 'stroke-width': 3 }, L.stools); });
+  TABLES.forEach(x => { sv('line', { x1: x, y1: 580, x2: x, y2: FLOOR, stroke: LINE, 'stroke-width': 8 }, L.front); sv('line', { x1: x - 36, y1: FLOOR - 3, x2: x + 36, y2: FLOOR - 3, stroke: LINE, 'stroke-width': 6, 'stroke-linecap': 'round' }, L.front); sv('rect', { x: x - 72, y: 568, width: 144, height: 13, rx: 6.5, fill: PANEL2, stroke: LINE, 'stroke-width': 3 }, L.front); });
+  (s.cups || []).forEach((c, i) => {
+    const g = sv('g', {}, L.top), tc = s.at + c.t;
+    sv('path', { d: `M${c.x - 14} 548h28l-3 19h-22z`, fill: '#FAFAFA' }, g); sv('path', { d: `M${c.x + 13} 552a7 7 0 0 1 0 12`, fill: 'none', stroke: '#FAFAFA', 'stroke-width': 4 }, g);
+    tick(t => { const u = clamp((t - tc) / 0.22, 0, 1); g.setAttribute('opacity', u > 0 ? 1 : 0); g.setAttribute('transform', `translate(${c.x} 567) scale(${(0.4 + 0.6 * easeOut(u) + Math.sin(u * Math.PI) * 0.15).toFixed(3)}) translate(${-c.x} -567)`); });
+    cue(tc, 'pop', { i: i + 2 });
+  });
+  if (s.ticks) {
+    const box = $('div', 'cf-ticks', root), lead = s.lead ?? 0.2, step = s.step ?? 0.4;
+    s.ticks.forEach((x, i) => {
+      const it = $('div', 'cf-tick', box), ic = $('i', '', it); ic.innerHTML = CHECK; $('span', '', it, x);
+      const a = s.at + lead + i * step; tick(t => { it.style.opacity = t >= a ? 1 : 0; });
+      A(it, { translate: ['0 18px', '0 0'] }, { at: a, dur: .24 }); A(ic, { scale: [0, 1] }, { at: a + 0.03, dur: .26, ease: EASE.back });
       cue(a, 'ding', { i });
     });
   }
-  (s.guests || []).forEach((g, i) => {                   // each guest walks in through the door and takes a seat
-    const t0 = s.at + (g.t ?? 0.2 + i * 0.45), sc = g.scale ?? 0.86;
-    const gf = figure(room, ''), seat = g.x ?? (tables[i % tables.length] + (i % 2 ? 120 : -30));
-    gf.style.cssText += `left:${DOOR_X - 84}px;margin-left:0;bottom:224px;top:auto;scale:${sc};transform-origin:50% 100%`;
-    const travel = seat - DOOR_X, dur = Math.max(0.5, Math.abs(travel) / 300);
-    showBetween(gf, t0);
-    A(gf, { opacity: [0, 1] }, { at: t0, dur: .18, ease: EASE.lin });
-    A(gf, { translate: ['0px 0px', `${travel}px 0px`] }, { at: t0, dur, ease: EASE.lin });
-    walk(gf, t0, 0.56, Math.ceil(dur / 0.56), 1, Math.min(dur, 0.9));
-    const ts = t0 + dur;                                 // sits: both thighs swing forward, the body drops onto the stool
-    if (g.sit === false) { cue(ts, 'tick', { i }); return; }
-    A(gf.querySelector('.fg-body'), { translate: ['0 0', '0 34px'] }, { at: ts, dur: .32, ease: EASE.out });
-    A(gf.querySelector('.fg-leg.l'), { rotate: ['26deg', '50deg'] }, { at: ts, dur: .32, ease: EASE.out });
-    A(gf.querySelector('.fg-leg.r'), { rotate: ['-26deg', '38deg'] }, { at: ts, dur: .32, ease: EASE.out });
-    A(gf.querySelector('.fg-arm.l'), { rotate: ['-24deg', '20deg'] }, { at: ts, dur: .32, ease: EASE.out });
-    A(gf.querySelector('.fg-arm.r'), { rotate: ['24deg', '32deg'] }, { at: ts, dur: .32, ease: EASE.out });
-    cue(t0, 'swish', { i });
-    cue(ts + 0.3, 'tick', { i });
-  });
+  (s.cast || []).forEach(a => actor(L[a.layer || 'cast'], a, s));
 };
-/* street: the shop seen from outside while people stream past it. One thing moves — the passers-by —
-   and not one of them turns in. The clock above the door runs fast so time is felt, not stated. */
-S.street = s => {
-  const { st } = fgStage(s);
-  const front = $('div', 'str-front', st);
-  $('div', 'str-awn', front);
-  const win = $('div', 'str-win', front);
-  const fig = figure(win, 'dim'); fig.style.cssText += 'width:116px;height:203px;bottom:-18px;top:auto;margin-left:-58px';
-  if (s.inside_walk !== false) walk(fig, s.at - 0.4, 0.72);   // behind glass: seen, not heard
-  $('div', 'str-door', front);
-  const clock = $('div', 'str-clock', st);
-  const hh = $('u', 'h', clock), mm = $('u', 'm', clock);
-  tick(t => { const u = Math.max(0, t - s.at); hh.style.rotate = (u * 90) + 'deg'; mm.style.rotate = (u * 1080) + 'deg'; });
-  const walkbox = $('div', 'str-walk', st), n = s.count ?? 9, r = rng(s.seed ?? 7);
-  for (let k = 0; k < n; k++) {
-    const p = $('div', 'str-p', walkbox), sc = 0.78 + r() * 0.5, t0 = s.at - 0.6 + k * ((s.dur + 0.6) / n) * (0.72 + r() * 0.3);
-    $('b', '', p); $('i', '', p);                        // head and body of one passer-by
-    p.style.scale = sc; p.style.opacity = String(0.5 + sc * 0.4); p.style.zIndex = String(Math.round(sc * 10));
-    A(p, { translate: ['0px 0px', '1500px 0px'] }, { at: t0, dur: 1.5 + r() * 0.9, ease: EASE.lin });
-    showBetween(p, t0, t0 + 2.6);
-    if (k % 3 === 0) cue(Math.max(s.at, t0 + 0.4), 'swish', { i: k });
-  }
+/* cafe_out: the street. The facade with its awning, a window over a stone ledge he can climb on, the
+   open door, and a clock that runs fast while he waits. `passers` streams grey figures past. */
+S.cafe_out = s => {
+  const { st } = fgStage(s), { svg, L } = setSvg(st, s);
+  sv('line', { x1: -60, y1: FLOOR, x2: 1020, y2: FLOOR, stroke: LINE, 'stroke-width': 3 }, L.back);
+  sv('line', { x1: -60, y1: 752, x2: 1020, y2: 752, stroke: '#1b1b20', 'stroke-width': 3 }, L.back);
+  sv('rect', { x: 150, y: 170, width: 660, height: 490, fill: PANEL, stroke: LINE, 'stroke-width': 3 }, L.back);
+  for (let k = 0; k < 20; k++) sv('rect', { x: 130 + k * 35, y: 146, width: 35, height: 50, fill: k % 2 ? PANEL : PANEL2 }, L.back);
+  for (let k = 0; k < 20; k++) sv('path', { d: `M${130 + k * 35} 196a17.5 17.5 0 0 0 35 0z`, fill: k % 2 ? PANEL : PANEL2, stroke: LINE, 'stroke-width': 2 }, L.back);
+  sv('rect', { x: 130, y: 146, width: 700, height: 50, fill: 'none', stroke: LINE, 'stroke-width': 3 }, L.back);
+  /* window with the empty room behind the glass */
+  sv('rect', { x: 196, y: 262, width: 320, height: 290, rx: 4, fill: '#000', stroke: LINE, 'stroke-width': 3 }, L.back);
+  [[262, 486], [430, 486]].forEach(([x, y]) => { sv('line', { x1: x - 30, y1: y, x2: x + 30, y2: y, stroke: '#1f1f25', 'stroke-width': 6, 'stroke-linecap': 'round' }, L.back); sv('line', { x1: x, y1: y, x2: x, y2: 552, stroke: '#1f1f25', 'stroke-width': 5 }, L.back); });
+  sv('line', { x1: 356, y1: 262, x2: 356, y2: 552, stroke: LINE, 'stroke-width': 3 }, L.back);
+  sv('rect', { x: 186, y: 586, width: 340, height: 74, rx: 4, fill: PANEL2, stroke: LINE, 'stroke-width': 3 }, L.back);
+  sv('line', { x1: 180, y1: 586, x2: 532, y2: 586, stroke: '#33333a', 'stroke-width': 5, 'stroke-linecap': 'round' }, L.back);
+  /* door (open: the cafe is open) and its sign */
+  sv('rect', { x: 596, y: 320, width: 148, height: 340, fill: '#000', stroke: LINE, 'stroke-width': 3 }, L.back);
+  sv('rect', { x: 612, y: 296, width: 116, height: 0, fill: 'none' }, L.back);
+  const sign = sv('g', {}, L.back);
+  sv('rect', { x: 620, y: 222, width: 100, height: 40, rx: 7, fill: 'none', stroke: '#FAFAFA', 'stroke-width': 3 }, sign);
+  const tx = sv('text', { x: 670, y: 250, 'text-anchor': 'middle', fill: '#FAFAFA', 'font-family': 'Geist, sans-serif', 'font-weight': 800, 'font-size': 22, 'letter-spacing': '3' }, sign); tx.textContent = 'OPEN';
+  /* clock: runs fast so the waiting is felt */
+  sv('circle', { cx: 776, cy: 262, r: 25, fill: PANEL2, stroke: '#5c5c64', 'stroke-width': 4 }, L.back);
+  const hh = sv('line', { x1: 776, y1: 262, x2: 776, y2: 248, stroke: '#8e8e96', 'stroke-width': 4, 'stroke-linecap': 'round' }, L.back);
+  const mm = sv('line', { x1: 776, y1: 262, x2: 776, y2: 243, stroke: '#8e8e96', 'stroke-width': 3, 'stroke-linecap': 'round' }, L.back);
+  const cs = s.clock ?? 1;
+  tick(t => { const u = Math.max(0, t - s.at) * cs; hh.setAttribute('transform', `rotate(${(u * 90 + 40).toFixed(1)} 776 262)`); mm.setAttribute('transform', `rotate(${(u * 1080 + 200).toFixed(1)} 776 262)`); });
+  const layers = { back: L.stools, mid: L.cast, front: L.front };
+  if (s.passers) passers(layers, s, s.passers);
+  (s.cast || []).forEach(a => actor(layers[a.layer || 'mid'], a, s));
 };
 /* map: the neighbourhood. Every other place is on it; his is the one pin that is not lit.
    `light_at` turns his pin on. */
@@ -999,7 +1174,7 @@ S.map = s => {
 for (let i = 0; i < scenes.length; i++) {
   const s = scenes[i];
   if (s.type === 'phone') { const run = [s]; while (scenes[i + 1] && scenes[i + 1].type === 'phone' && !scenes[i + 1].new_phone) run.push(scenes[++i]); phoneRun(run); }
-  else if (S[s.type]) { S[s.type](s); if (s.at > 0 && !['flash', 'offer', 'end', 'bignum', 'slam', 'chaos', 'statement', 'blurtype', 'cut', 'button', 'merge', 'count', 'dial', 'listings', 'receipt', 'landing', 'shop', 'street', 'map'].includes(s.type)) cue(s.at, 'swish'); }
+  else if (S[s.type]) { S[s.type](s); if (s.at > 0 && !['flash', 'offer', 'end', 'bignum', 'slam', 'chaos', 'statement', 'blurtype', 'cut', 'button', 'merge', 'count', 'dial', 'listings', 'receipt', 'landing', 'cafe_in', 'cafe_out', 'map'].includes(s.type)) cue(s.at, 'swish'); }
   else console.error('unknown scene type', s.type);
 }
 /* The technical HUD is opt-in ("hud": true). Its counters change on every frame in all four corners,
