@@ -832,11 +832,123 @@ S.landing = s => {
   } else showBetween(btn, Infinity);
 };
 
+/* ------------------------------------------------------------------ figure scenes (shop / street / map)
+   One small figure carries the story. FIGURE is written once and every scene reuses that exact markup,
+   so the character cannot drift between cuts: same proportions, same stroke, same colours throughout.
+   Layout follows the other story scenes: headline bottom edge at y=900, the scene object centred on y=1040. */
+const FIGURE = `<svg viewBox="0 0 120 210" aria-hidden="true">
+<circle class="hd" cx="60" cy="27" r="21"/>
+<path class="lm am"  d="M60 72 L28 104"/><path class="lm am2" d="M60 72 L92 104"/>
+<path class="lm bd"  d="M60 50 L60 130"/>
+<path class="lm lg"  d="M60 130 L36 186"/><path class="lm lg2" d="M60 130 L84 186"/>
+</svg>`;
+function figure(parent, cls) { const f = $('div', 'figure ' + (cls || ''), parent); f.innerHTML = FIGURE; return f; }
+function fgStage(s) {                                   // headline high, then the 960×960 area the scene plays in
+  const root = sceneRoot(s);
+  if ((s.lines || []).length) {                        // a scene may run without a headline, so the eye is free to watch
+    const el = $('div', 'fg-head', root);
+    s.lines.forEach((l, i) => { const ln = $('span', 'ln', el, l); if (s.chrome === i) ln.classList.add('chrome'); });
+    fit(el, 940, s.size || 150, 70);
+    if (s.at > 0) A(el, { scale: [1.04, 1] }, { at: s.at, dur: .2 });
+  }
+  cue(s.at, s.at === 0 ? 'hit' : 'slam');
+  const st = $('div', 'fg-stage', root);
+  return { root, st };
+}
+/* shop: the inside of the shop. The figure stands behind the counter, alone. Optional OPEN sign, a cup
+   left on the counter, and `items` that tick off one by one ("everything was right"). */
+S.shop = s => {
+  const { root, st } = fgStage(s);
+  const room = $('div', 'sh-room', st);
+  $('div', 'sh-floor', room);
+  if (!s.items) {                                        // the shelf is dropped when the tick list needs the wall
+    const shelf = $('div', 'sh-shelf', room);
+    for (let k = 0; k < 7; k++) { const b = $('i', '', shelf); b.style.left = (22 + k * 92) + 'px'; b.style.height = (44 + (k % 3) * 18) + 'px'; }
+  }
+  const fig = figure(room, s.dim ? 'dim' : '');
+  fig.style.bottom = '230px'; fig.style.top = 'auto';
+  $('div', 'sh-counter', room);
+  if (s.sign && !s.items) { const sg = $('div', 'sh-sign', room, s.sign); if (s.at > 0) A(sg, { opacity: [0, 1], scale: [.8, 1] }, { at: s.at + 0.1, dur: .26, ease: EASE.back }); }
+  if (s.cup) $('div', 'sh-cup', room);
+  if (s.sway !== false) A(fig, { translate: ['0px 0px', '0px -7px', '0px 0px'] }, { at: s.at, dur: 2.2, ease: EASE.io, iter: 99 });
+  if (s.items) {                                         // lime checks are a CTA-family element and allowed here
+    const box = $('div', 'sh-items', st), lead = s.lead ?? 0.25, step = s.step ?? 0.52;
+    s.items.forEach((x, i) => {
+      const it = $('div', 'sh-item', box, ''), ic = $('i', '', it); ic.innerHTML = CHECK;
+      $('span', '', it, x);
+      const a = s.at + lead + i * step;
+      showBetween(it, a); A(it, { opacity: [0, 1], translate: ['0 20px', '0 0'] }, { at: a, dur: .24 });
+      A(ic, { scale: [0, 1] }, { at: a + 0.04, dur: .26, ease: EASE.back });
+      cue(a, 'ding', { i });
+    });
+  }
+};
+/* street: the shop seen from outside while people stream past it. One thing moves — the passers-by —
+   and not one of them turns in. The clock above the door runs fast so time is felt, not stated. */
+S.street = s => {
+  const { st } = fgStage(s);
+  const front = $('div', 'str-front', st);
+  $('div', 'str-awn', front);
+  const win = $('div', 'str-win', front);
+  const fig = figure(win, 'dim'); fig.style.cssText += 'width:104px;height:182px;bottom:-16px;top:auto;margin-left:-52px';
+  $('div', 'str-door', front);
+  const clock = $('div', 'str-clock', st);
+  const hh = $('u', 'h', clock), mm = $('u', 'm', clock);
+  tick(t => { const u = Math.max(0, t - s.at); hh.style.rotate = (u * 90) + 'deg'; mm.style.rotate = (u * 1080) + 'deg'; });
+  const walk = $('div', 'str-walk', st), n = s.count ?? 9, r = rng(s.seed ?? 7);
+  for (let k = 0; k < n; k++) {
+    const p = $('div', 'str-p', walk), sc = 0.78 + r() * 0.5, t0 = s.at - 0.6 + k * ((s.dur + 0.6) / n) * (0.72 + r() * 0.3);
+    $('b', '', p); $('i', '', p);                        // head and body of one passer-by
+    p.style.scale = sc; p.style.opacity = String(0.5 + sc * 0.4); p.style.zIndex = String(Math.round(sc * 10));
+    A(p, { translate: ['0px 0px', '1500px 0px'] }, { at: t0, dur: 1.5 + r() * 0.9, ease: EASE.lin });
+    showBetween(p, t0, t0 + 2.6);
+    if (k % 3 === 0) cue(Math.max(s.at, t0 + 0.4), 'swish', { i: k });
+  }
+};
+/* map: the neighbourhood. Every other place is on it; his is the one pin that is not lit.
+   `light_at` turns his pin on, `walk_at` brings one person to it. */
+S.map = s => {
+  const { st } = fgStage(s);
+  const card = $('div', 'mp-card', st), r = rng(s.seed ?? 11);
+  const MX = 410, MY = 280;                              // centre of the card: his own pin never moves
+  const others = [];
+  const spots = [[-300,-150],[-170,-190],[-40,-160],[110,-180],[250,-120],[-320,0],[-180,-40],[150,-30],[290,10],[-280,130],[-130,110],[30,150],[170,120],[300,160],[-60,-60],[220,-70]];
+  spots.forEach((p, i) => {
+    const pin = $('div', 'mp-pin', card);
+    pin.style.left = (MX + p[0]) + 'px'; pin.style.top = (MY + p[1]) + 'px';
+    const a = s.at + (s.lead ?? 0.2) + i * (s.step ?? 0.075);
+    if (s.others !== 'on') { classAt(pin, 'on', a); A(pin, { scale: [0, 1] }, { at: a, dur: .22, ease: EASE.back }); if (i % 4 === 0) cue(a, 'tick', { i }); }
+    else pin.classList.add('on');
+    others.push(pin);
+  });
+  if (s.dim_others) { const td = s.at + s.dim_others; others.forEach(p => A(p, { opacity: [1, .12] }, { at: td, dur: .4 })); cue(td, 'suck'); }
+  const mine = $('div', 'mp-mine', card);
+  mine.style.left = MX + 'px'; mine.style.top = MY + 'px';
+  if (s.at > 0) A(mine, { scale: [0, 1] }, { at: s.at + 0.1, dur: .3, ease: EASE.back });
+  const tl = s.light_at != null ? s.at + s.light_at : Infinity;
+  if (tl < Infinity) {
+    classAt(mine, 'on', tl);
+    A(mine, { scale: [1, 1.35, 1] }, { at: tl, dur: .4, ease: EASE.back });
+    const ring = $('div', 'mp-ring', card); ring.style.left = MX + 'px'; ring.style.top = MY + 'px';
+    showBetween(ring, tl, tl + 0.6); A(ring, { scale: [.4, 3], opacity: [.9, 0] }, { at: tl, dur: .6 });
+    cue(tl, 'ding', { i: 3 });
+    others.forEach((p, i) => { const a = tl + 0.1 + i * 0.03; A(p, { opacity: [.12, .5] }, { at: a, dur: .3 }); });
+  }
+  if (s.walk_at != null) {
+    const tw = s.at + s.walk_at, g = $('div', 'mp-guest', card);
+    g.style.left = (MX - 27) + 'px'; g.style.top = (MY - 120) + 'px';
+    showBetween(g, tw);
+    A(g, { translate: ['-300px 150px', '0px 46px'], opacity: [0, 1] }, { at: tw, dur: .9, ease: EASE.io });
+    A(g, { scale: [1, 0] }, { at: tw + 0.95, dur: .2, ease: EASE.in });
+    cue(tw, 'swish'); cue(tw + 1.0, 'pop');
+  }
+};
+
 /* ------------------------------------------------------------------ build */
 for (let i = 0; i < scenes.length; i++) {
   const s = scenes[i];
   if (s.type === 'phone') { const run = [s]; while (scenes[i + 1] && scenes[i + 1].type === 'phone' && !scenes[i + 1].new_phone) run.push(scenes[++i]); phoneRun(run); }
-  else if (S[s.type]) { S[s.type](s); if (s.at > 0 && !['flash', 'offer', 'end', 'bignum', 'slam', 'chaos', 'statement', 'blurtype', 'cut', 'button', 'merge', 'count', 'dial', 'listings', 'receipt', 'landing'].includes(s.type)) cue(s.at, 'swish'); }
+  else if (S[s.type]) { S[s.type](s); if (s.at > 0 && !['flash', 'offer', 'end', 'bignum', 'slam', 'chaos', 'statement', 'blurtype', 'cut', 'button', 'merge', 'count', 'dial', 'listings', 'receipt', 'landing', 'shop', 'street', 'map'].includes(s.type)) cue(s.at, 'swish'); }
   else console.error('unknown scene type', s.type);
 }
 /* The technical HUD is opt-in ("hud": true). Its counters change on every frame in all four corners,
