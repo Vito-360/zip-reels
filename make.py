@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT / "engine"))
 import render, audio  # noqa: E402
 
 CTA = "Get the free check"
-SCENE_TYPES = {"phone", "bignum", "flash", "lines", "statement", "cards", "offer", "end", "chaos", "blurtype", "stack", "slam", "cut", "button", "merge", "count", "dial", "listings", "receipt", "landing", "cafe_in", "cafe_out", "map"}
+SCENE_TYPES = {"phone", "bignum", "flash", "lines", "statement", "cards", "offer", "end", "chaos", "blurtype", "stack", "slam", "cut", "button", "merge", "count", "dial", "listings", "receipt", "landing", "cafe_in", "cafe_out", "map", "glance", "pov", "behind"}
 
 
 def validate(spec):

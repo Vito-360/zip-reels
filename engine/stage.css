@@ -380,3 +380,32 @@ body{font-family:Geist,Inter,system-ui,sans-serif;color:var(--fg);-webkit-font-s
 .mp-mine{position:absolute;width:74px;height:74px;margin:-37px 0 0 -37px;border-radius:50% 50% 50% 0;rotate:-45deg;border:6px solid #5c5c64;background:#000}
 .mp-mine.on{border-color:#FAFAFA;background:#FAFAFA}
 .mp-ring{position:absolute;width:74px;height:74px;margin:-37px 0 0 -37px;border-radius:50%;border:5px solid #FAFAFA}
+
+/* ---------- glance: a visitor's first 50 ms ---------- */
+.cf-set.gl-set{transform:none}
+.gl-rig{width:640px;height:1100px}
+.screen.gl-screen{padding-top:176px}
+.gl-bar{position:absolute;left:0;right:0;top:92px;height:66px;background:#f1f1f3;border-bottom:1px solid #dcdce2;display:flex;align-items:center;gap:18px;padding:0 26px;font-size:24px;color:#55555e;z-index:6}
+.gl-bar b{font-size:60px;line-height:1;font-weight:500;color:#0b0b0d;margin-top:-8px}
+.gl-gaze{position:absolute;width:118px;height:118px;margin:-59px 0 0 -59px;border-radius:50%;border:9px solid #E4FD97;background:#E4FD9740;box-shadow:0 0 0 5px #0b0b0d,inset 0 0 0 4px #0b0b0d;z-index:8}
+.gl-tap{position:absolute;width:124px;height:124px;margin:-62px 0 0 -62px;border-radius:50%;background:#0b0b0d2e;border:5px solid #0b0b0d99;opacity:0;z-index:9}
+.gl-timer{position:absolute;left:0;right:0;top:438px;text-align:center;font-family:var(--mono);font-size:64px;font-weight:700;color:#E4FD97;letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.gl-vhs{position:absolute;inset:-12px 0;background:repeating-linear-gradient(0deg,#ffffff10 0 2px,transparent 2px 7px);pointer-events:none;z-index:30}
+
+/* ---------- landscape 1920x1080 ("format": "landscape") ---------- */
+html.land,html.land body,html.land #stage{width:1920px;height:1080px}
+.land .end-logo{left:700px;top:150px;width:520px}
+.land .end-tag{top:620px;font-size:68px}
+.land .end-cta{top:750px}
+.land .fg-head{top:64px;left:200px;right:200px}
+.land .fg-stage{left:480px;top:300px}
+.land .gl-timer{top:172px}
+
+/* ---------- pov (through his eyes) and behind ---------- */
+.pov-hands{position:absolute;inset:0;z-index:12;pointer-events:none}
+.pov-vig{position:absolute;inset:0;z-index:13;pointer-events:none;background:radial-gradient(ellipse 62% 56% at 50% 52%,transparent 58%,#000 100%)}
+.pov-lid{position:absolute;left:-12%;right:-12%;height:56%;z-index:14;background:#050506;box-shadow:0 0 0 6px #1a1a1f}
+.pov-lid.top{top:0;border-radius:0 0 50% 50% / 0 0 26% 26%}
+.pov-lid.bot{bottom:0;border-radius:50% 50% 0 0 / 26% 26% 0 0}
+.pov-black{position:absolute;inset:0;background:#000;z-index:14;pointer-events:none}
+.fg-head,.gl-timer{z-index:20}

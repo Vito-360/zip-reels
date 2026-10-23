@@ -33,6 +33,7 @@ function A(el, kf, o = {}) {
   a.pause(); TL.anims.push(a); return a;
 }
 const tick = fn => TL.ticks.push(fn);
+const ANIM = (el, kf, o) => A(el, kf, o);   // A() under another name, for code where `A` is a local (the rig's actor)
 const cue = (t, kind, extra) => TL.events.push(Object.assign({ t: Math.max(0, +(+t).toFixed(3)), kind }, extra || {}));
 const showBetween = (el, t0, t1 = Infinity) => tick(t => { el.style.display = (t >= t0 - 1e-6 && t < t1 - 1e-6) ? '' : 'none'; });
 const classAt = (el, cls, t0, t1 = Infinity) => tick(t => el.classList.toggle(cls, t >= t0 - 1e-6 && t < t1));
@@ -69,6 +70,8 @@ let cursor = 0;
 scenes.forEach((s, i) => { if (s.at == null) s.at = cursor; cursor = s.at + s.dur; s.i = i; });
 const DUR = SPEC.duration || cursor;
 const KIN = SPEC.style === 'kinetic';
+const LAND = SPEC.format === 'landscape', FW = LAND ? 1920 : 1080, FH = LAND ? 1080 : 1920;   // frame size
+if (LAND) document.documentElement.classList.add('land');
 const startOf = s => (s.at === 0 ? -0.3 : s.at);   // first scene is already mid-motion on frame 0
 
 await document.fonts.load('700 100px Geist'); await document.fonts.load('400 30px Geist'); await document.fonts.ready;
@@ -851,7 +854,8 @@ const RIG = { thigh: 43, shin: 41, upper: 27, fore: 25, torso: 80, shoulder: 58,
 const INK = {
   owner: ['#FAFAFA', '#a6a6ad'],     // near limbs, far limbs (darker, so the stride reads)
   guest: ['#C8FF3D', '#88aa27'],     // zip's CTA lime: the people who came because of the fix
-  street: ['#4b4b54', '#303037']
+  street: ['#4b4b54', '#303037'],
+  visitor: ['#a3a3ac', '#6a6a73']    // a lead figure who has not come in yet: lighter than the street, not the owner's white
 };
 function ik2(ax, ay, bx, by, l1, l2, bend) {
   let dx = bx - ax, dy = by - ay, d = Math.hypot(dx, dy);
@@ -888,7 +892,7 @@ const headOf = p => [p.hx + p.d * Math.sin(p.tilt) * RIG.headAt * p.sc, p.hy - M
 function standPose(A, x, g, d, t, o = {}) {
   const sc = A.scaleAt(g), br = Math.sin(t * 2.3 + A.seed) * 1.2 * sc, f = g - (o.e || 0);   // e: standing on something e px high
   const fd = o.fd ?? d;                                   // feet and hands keep the side they had; only the look turns
-  const p = { hx: x, hy: f - RIG.stand * sc + (o.dip || 0) * sc + br * 0.3, tilt: o.tilt || 0.02, d, eye: o.eye ?? d, sc, op: 1,
+  const p = { hx: x, hy: f - RIG.stand * sc + (o.dip || 0) * sc + br * 0.3, tilt: o.tilt || 0.02, d, eye: o.eye ?? d, sc, op: 1, blink: o.blink || 0,
     feet: o.feet ? o.feet.map(q => [q[0], f]) : [[x + fd * 9 * sc, f], [x - fd * 8 * sc, f]] };
   const [sx, sy] = shoulderOf(p);
   p.hands = [[sx + fd * 7 * sc, sy + 47 * sc + br], [sx - fd * 6 * sc, sy + 47 * sc + br]];
@@ -902,14 +906,14 @@ function walkPose(A, path, s, t) {
     const a = plant(n), b = plant(n + 1), w = smooth((f - 0.5) * 2);
     return [lerp(a.x, b.x, w), lerp(a.y, b.y, w) - Math.sin(Math.PI * (f - 0.5) * 2) * RIG.lift * sc];
   });
-  const u0 = s / S, p = { hx: P.x, hy: P.y - RIG.walk * sc + Math.cos(4 * Math.PI * u0) * 2.6 * sc, tilt: 0.07, d, eye: P.tx, sc, op: 1, feet };
+  const u0 = s / S, p = { hx: P.x, hy: P.y - RIG.walk * sc + Math.cos(4 * Math.PI * u0) * 2.6 * sc, tilt: 0.07, d, eye: P.tx, sc, op: 1, blink: 0, feet };
   const [sx, sy] = shoulderOf(p), w = Math.cos(2 * Math.PI * u0);          // +1 while the near foot is ahead
   p.hands = [-1, 1].map(k => { const phi = k * w * 0.5; return [sx + d * Math.sin(phi) * 49 * sc, sy + Math.cos(phi) * 49 * sc]; });
   return p;
 }
 function lerpPose(a, b, u) {
   const L2 = (x, y) => [lerp(x[0], y[0], u), lerp(x[1], y[1], u)];
-  return { hx: lerp(a.hx, b.hx, u), hy: lerp(a.hy, b.hy, u), tilt: lerp(a.tilt, b.tilt, u), d: u < 0.5 ? a.d : b.d, eye: lerp(a.eye, b.eye, u),
+  return { hx: lerp(a.hx, b.hx, u), hy: lerp(a.hy, b.hy, u), tilt: lerp(a.tilt, b.tilt, u), d: u < 0.5 ? a.d : b.d, eye: lerp(a.eye, b.eye, u), blink: lerp(a.blink || 0, b.blink || 0, u),
     sc: lerp(a.sc, b.sc, u), op: lerp(a.op, b.op, u), feet: [L2(a.feet[0], b.feet[0]), L2(a.feet[1], b.feet[1])], hands: [L2(a.hands[0], b.hands[0]), L2(a.hands[1], b.hands[1])] };
 }
 function drawFig(F, p) {
@@ -925,7 +929,8 @@ function drawFig(F, p) {
   F.torso.setAttribute('d', `M${p.hx.toFixed(1)} ${p.hy.toFixed(1)}L${nx.toFixed(1)} ${ny.toFixed(1)}`);
   [F.legN, F.legF, F.armN, F.armF, F.torso].forEach(e => e.setAttribute('stroke-width', sw));
   F.head.setAttribute('cx', cx.toFixed(1)); F.head.setAttribute('cy', cy.toFixed(1)); F.head.setAttribute('r', (RIG.head * sc).toFixed(1));
-  F.eye.setAttribute('cx', (cx + p.eye * 9.5 * sc).toFixed(1)); F.eye.setAttribute('cy', (cy - 2.5 * sc).toFixed(1)); F.eye.setAttribute('r', (3.3 * sc).toFixed(2));
+  F.eye.setAttribute('cx', (cx + p.eye * 9.5 * sc).toFixed(1)); F.eye.setAttribute('cy', (cy - 2.5 * sc).toFixed(1));
+  F.eye.setAttribute('rx', (3.3 * sc * (1 + 0.5 * (p.blink || 0))).toFixed(2)); F.eye.setAttribute('ry', (3.3 * sc * (1 - 0.82 * (p.blink || 0))).toFixed(2));   // blink: the eye closes to a line
 }
 /* actor(): one figure and its script. `segs` run one after another from `at` (seconds from the scene
    start, may be negative so the figure is already moving on the first frame):
@@ -937,7 +942,7 @@ function actor(layer, a, s) {
   A.scaleAt = y => A.sc * (1 + (y - A.ref) * A.depth);
   const ink = INK[a.ink || 'owner'], g = sv('g', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', fill: 'none' }, layer);
   const F = { g, armF: sv('path', { stroke: ink[1] }, g), legF: sv('path', { stroke: ink[1] }, g), torso: sv('path', { stroke: ink[0] }, g),
-    legN: sv('path', { stroke: ink[0] }, g), armN: sv('path', { stroke: ink[0] }, g), head: sv('circle', { fill: ink[0] }, g), eye: sv('circle', { fill: '#000' }, g) };
+    legN: sv('path', { stroke: ink[0] }, g), armN: sv('path', { stroke: ink[0] }, g), head: sv('circle', { fill: ink[0] }, g), eye: sv('ellipse', { fill: '#000' }, g) };
   const base = s.at + (a.at || 0), segs = [];
   let cur = { x: a.x, g: a.g ?? FLOOR, d: a.d ?? 1, e: a.e || 0 }, t0 = 0;    // e: starts standing on something (a step behind the counter)
   const steps = (T, from, dur) => { if (!a.steps) return; for (let k = 0; k * T / 2 < dur; k++) { const at = base + from + k * T / 2; if (at >= s.at && at < s.at + a.steps) cue(at, 'foot', { i: k }); } };
@@ -995,6 +1000,12 @@ function actor(layer, a, s) {
         const p = standPose(A, c0.x, c0.g, d0, t, { e: c0.e, feet: keep }), [sx, sy] = shoulderOf(p), k = Math.min(1, τ / 0.2);
         p.hands[0] = [sx + d0 * (16 + Math.sin(τ * 2 * Math.PI * 3.2) * 13 * k) * p.sc, sy - 46 * p.sc * k + 47 * p.sc * (1 - k)];
         return p; };
+      else if (q.do === 'hold') sg.pose = (τ, t) => {
+        const L = lookAt(q.look, d0, τ), bl = q.blink || [], p = standPose(A, c0.x, c0.g, L.d, t, { e: c0.e, tilt: 0.06, eye: L.eye, fd: d0, feet: keep });
+        let b = 0; for (let k = 0; k < bl.length; k++) { const [bt, bv] = bl[k], nx = bl[k + 1]; if (τ >= bt) b = nx && τ < nx[0] ? lerp(bv, nx[1], smooth((τ - bt) / (nx[0] - bt))) : bv; }
+        p.blink = b; const [sx, sy] = shoulderOf(p);
+        p.hands = [[sx + d0 * 34 * p.sc, sy - 4 * p.sc], [sx + d0 * 27 * p.sc, sy + 3 * p.sc]];
+        return p; };
       else if (q.do === 'shade') sg.pose = (τ, t) => {
         const L = lookAt(q.look, d0, τ), d = L.d, p = standPose(A, c0.x, c0.g, d, t, { e: c0.e, tilt: 0.06, eye: L.eye, fd: d0, feet: keep }), [hx, hy] = headOf(p);
         p.hands = [[hx + d * 16 * p.sc, hy - 3 * p.sc], [p.hx - d * 14 * p.sc, p.hy - 14 * p.sc]];
@@ -1018,8 +1029,22 @@ function actor(layer, a, s) {
     return p;
   };
   if (a.bell) cue(base + (a.appear || 0), 'doorbell');
-  tick(t => { if (t >= s.at - 1e-6 && t < s.at + s.dur) drawFig(F, poseAt(t)); });
-  return { poseAt };
+  const clock = t => (a.freeze != null ? s.at + a.freeze : t);       // freeze: the figure holds one instant
+  const ph = a.phone ? sv('rect', { rx: 5 * A.sc, fill: '#e9e9ee', stroke: '#000', 'stroke-width': 2 }, g) : null;
+  const inkTo = a.ink_to ? INK[a.ink_to] : null, tInk = s.at + (a.ink_at ?? 0);
+  tick(t => {
+    if (t < s.at - 1e-6 || t >= s.at + s.dur) return;
+    const p = poseAt(clock(t)); drawFig(F, p);
+    if (inkTo) { const k = t >= tInk ? inkTo : ink; [F.legN, F.armN, F.torso].forEach(e => e.setAttribute('stroke', k[0])); [F.legF, F.armF].forEach(e => e.setAttribute('stroke', k[1])); F.head.setAttribute('fill', k[0]); }
+    if (ph) {
+      const [hx, hy] = p.hands[0], w = 21 * p.sc, h = 37 * p.sc, off = a.phone_off_at != null && t >= s.at + a.phone_off_at;
+      ph.setAttribute('x', (hx - w / 2 + p.d * 3 * p.sc).toFixed(1)); ph.setAttribute('y', (hy - h * 0.72).toFixed(1));
+      ph.setAttribute('width', w.toFixed(1)); ph.setAttribute('height', h.toFixed(1)); ph.setAttribute('fill', off ? '#26262b' : '#e9e9ee');
+      ph.style.display = p.op > 0.01 ? '' : 'none';
+    }
+  });
+  if (inkTo) { cue(tInk, 'pop', { i: 4 }); ANIM(g, { opacity: [1, 0.35, 1] }, { at: tInk - 0.02, dur: 0.18, ease: EASE.lin }); }
+  return { poseAt: t => poseAt(clock(t)) };
 }
 /* street passers-by: grey figures on two lanes, both directions; none of them turns in */
 function passers(layers, s, o) {
@@ -1105,37 +1130,240 @@ S.cafe_in = s => {
   }
   (s.cast || []).forEach(a => actor(L[a.layer || 'cast'], a, s));
 };
+/* drawFacade: the cafe from the street — neighbours either side, awning, window over a stone ledge, open
+   door with its OPEN sign, and a clock that runs fast. Shared by cafe_out and behind. */
+function drawFacade(G, s) {
+  [[-640, 120], [840, 1560]].forEach(([x0, x1]) => {                      // the neighbours: dim, so his is the one we see
+    sv('rect', { x: x0, y: 214, width: x1 - x0, height: 446, fill: '#08080a', stroke: '#1a1a1f', 'stroke-width': 3 }, G);
+    for (let x = x0 + 50; x < x1 - 120; x += 210) sv('rect', { x, y: 300, width: 140, height: 200, rx: 4, fill: '#050506', stroke: '#1a1a1f', 'stroke-width': 3 }, G);
+  });
+  sv('line', { x1: -1000, y1: FLOOR, x2: 2000, y2: FLOOR, stroke: LINE, 'stroke-width': 3 }, G);
+  sv('line', { x1: -1000, y1: 752, x2: 2000, y2: 752, stroke: '#1b1b20', 'stroke-width': 3 }, G);
+  sv('rect', { x: 150, y: 170, width: 660, height: 490, fill: PANEL, stroke: LINE, 'stroke-width': 3 }, G);
+  for (let k = 0; k < 20; k++) sv('rect', { x: 130 + k * 35, y: 146, width: 35, height: 50, fill: k % 2 ? PANEL : PANEL2 }, G);
+  for (let k = 0; k < 20; k++) sv('path', { d: `M${130 + k * 35} 196a17.5 17.5 0 0 0 35 0z`, fill: k % 2 ? PANEL : PANEL2, stroke: LINE, 'stroke-width': 2 }, G);
+  sv('rect', { x: 130, y: 146, width: 700, height: 50, fill: 'none', stroke: LINE, 'stroke-width': 3 }, G);
+  /* window with the empty room behind the glass */
+  sv('rect', { x: 196, y: 262, width: 320, height: 290, rx: 4, fill: '#000', stroke: LINE, 'stroke-width': 3 }, G);
+  [[262, 486], [430, 486]].forEach(([x, y]) => { sv('line', { x1: x - 30, y1: y, x2: x + 30, y2: y, stroke: '#1f1f25', 'stroke-width': 6, 'stroke-linecap': 'round' }, G); sv('line', { x1: x, y1: y, x2: x, y2: 552, stroke: '#1f1f25', 'stroke-width': 5 }, G); });
+  sv('line', { x1: 356, y1: 262, x2: 356, y2: 552, stroke: LINE, 'stroke-width': 3 }, G);
+  sv('rect', { x: 186, y: 586, width: 340, height: 74, rx: 4, fill: PANEL2, stroke: LINE, 'stroke-width': 3 }, G);
+  sv('line', { x1: 180, y1: 586, x2: 532, y2: 586, stroke: '#33333a', 'stroke-width': 5, 'stroke-linecap': 'round' }, G);
+  /* door (open: the cafe is open) and its sign */
+  sv('rect', { x: 596, y: 320, width: 148, height: 340, fill: '#000', stroke: LINE, 'stroke-width': 3 }, G);
+  sv('rect', { x: 612, y: 296, width: 116, height: 0, fill: 'none' }, G);
+  const sign = sv('g', {}, G);
+  sv('rect', { x: 620, y: 222, width: 100, height: 40, rx: 7, fill: 'none', stroke: '#FAFAFA', 'stroke-width': 3 }, sign);
+  const tx = sv('text', { x: 670, y: 250, 'text-anchor': 'middle', fill: '#FAFAFA', 'font-family': 'Geist, sans-serif', 'font-weight': 800, 'font-size': 22, 'letter-spacing': '3' }, sign); tx.textContent = 'OPEN';
+  /* clock: runs fast so the waiting is felt */
+  sv('circle', { cx: 776, cy: 262, r: 25, fill: PANEL2, stroke: '#5c5c64', 'stroke-width': 4 }, G);
+  const hh = sv('line', { x1: 776, y1: 262, x2: 776, y2: 248, stroke: '#8e8e96', 'stroke-width': 4, 'stroke-linecap': 'round' }, G);
+  const mm = sv('line', { x1: 776, y1: 262, x2: 776, y2: 243, stroke: '#8e8e96', 'stroke-width': 3, 'stroke-linecap': 'round' }, G);
+  const cs = s.clock ?? 1;
+  tick(t => { const u = Math.max(0, t - s.at) * cs; hh.setAttribute('transform', `rotate(${(u * 90 + 40).toFixed(1)} 776 262)`); mm.setAttribute('transform', `rotate(${(u * 1080 + 200).toFixed(1)} 776 262)`); });
+}
 /* cafe_out: the street. The facade with its awning, a window over a stone ledge he can climb on, the
    open door, and a clock that runs fast while he waits. `passers` streams grey figures past. */
 S.cafe_out = s => {
   const { st } = fgStage(s), { svg, L } = setSvg(st, s);
-  sv('line', { x1: -60, y1: FLOOR, x2: 1020, y2: FLOOR, stroke: LINE, 'stroke-width': 3 }, L.back);
-  sv('line', { x1: -60, y1: 752, x2: 1020, y2: 752, stroke: '#1b1b20', 'stroke-width': 3 }, L.back);
-  sv('rect', { x: 150, y: 170, width: 660, height: 490, fill: PANEL, stroke: LINE, 'stroke-width': 3 }, L.back);
-  for (let k = 0; k < 20; k++) sv('rect', { x: 130 + k * 35, y: 146, width: 35, height: 50, fill: k % 2 ? PANEL : PANEL2 }, L.back);
-  for (let k = 0; k < 20; k++) sv('path', { d: `M${130 + k * 35} 196a17.5 17.5 0 0 0 35 0z`, fill: k % 2 ? PANEL : PANEL2, stroke: LINE, 'stroke-width': 2 }, L.back);
-  sv('rect', { x: 130, y: 146, width: 700, height: 50, fill: 'none', stroke: LINE, 'stroke-width': 3 }, L.back);
-  /* window with the empty room behind the glass */
-  sv('rect', { x: 196, y: 262, width: 320, height: 290, rx: 4, fill: '#000', stroke: LINE, 'stroke-width': 3 }, L.back);
-  [[262, 486], [430, 486]].forEach(([x, y]) => { sv('line', { x1: x - 30, y1: y, x2: x + 30, y2: y, stroke: '#1f1f25', 'stroke-width': 6, 'stroke-linecap': 'round' }, L.back); sv('line', { x1: x, y1: y, x2: x, y2: 552, stroke: '#1f1f25', 'stroke-width': 5 }, L.back); });
-  sv('line', { x1: 356, y1: 262, x2: 356, y2: 552, stroke: LINE, 'stroke-width': 3 }, L.back);
-  sv('rect', { x: 186, y: 586, width: 340, height: 74, rx: 4, fill: PANEL2, stroke: LINE, 'stroke-width': 3 }, L.back);
-  sv('line', { x1: 180, y1: 586, x2: 532, y2: 586, stroke: '#33333a', 'stroke-width': 5, 'stroke-linecap': 'round' }, L.back);
-  /* door (open: the cafe is open) and its sign */
-  sv('rect', { x: 596, y: 320, width: 148, height: 340, fill: '#000', stroke: LINE, 'stroke-width': 3 }, L.back);
-  sv('rect', { x: 612, y: 296, width: 116, height: 0, fill: 'none' }, L.back);
-  const sign = sv('g', {}, L.back);
-  sv('rect', { x: 620, y: 222, width: 100, height: 40, rx: 7, fill: 'none', stroke: '#FAFAFA', 'stroke-width': 3 }, sign);
-  const tx = sv('text', { x: 670, y: 250, 'text-anchor': 'middle', fill: '#FAFAFA', 'font-family': 'Geist, sans-serif', 'font-weight': 800, 'font-size': 22, 'letter-spacing': '3' }, sign); tx.textContent = 'OPEN';
-  /* clock: runs fast so the waiting is felt */
-  sv('circle', { cx: 776, cy: 262, r: 25, fill: PANEL2, stroke: '#5c5c64', 'stroke-width': 4 }, L.back);
-  const hh = sv('line', { x1: 776, y1: 262, x2: 776, y2: 248, stroke: '#8e8e96', 'stroke-width': 4, 'stroke-linecap': 'round' }, L.back);
-  const mm = sv('line', { x1: 776, y1: 262, x2: 776, y2: 243, stroke: '#8e8e96', 'stroke-width': 3, 'stroke-linecap': 'round' }, L.back);
-  const cs = s.clock ?? 1;
-  tick(t => { const u = Math.max(0, t - s.at) * cs; hh.setAttribute('transform', `rotate(${(u * 90 + 40).toFixed(1)} 776 262)`); mm.setAttribute('transform', `rotate(${(u * 1080 + 200).toFixed(1)} 776 262)`); });
+  drawFacade(L.back, s);
   const layers = { back: L.stools, mid: L.cast, front: L.front };
   if (s.passers) passers(layers, s, s.passers);
   (s.cast || []).forEach(a => actor(layers[a.layer || 'mid'], a, s));
+};
+/* phoneFx: a big phone showing a web page, at frame position (PX, PY) and scale PS, with everything that
+   happens on it: a Citrus timer under the headline, a Citrus ring where the eye lands (`gaze`), taps on
+   named parts of the page (`taps`), the back navigation (`back_at`) and the rewind look (`rewind`).
+   Named parts: back, nav, hero, cols, foot, link (old site) and headline, stars, btn (new site).
+   Returns the screen and `at(name)`, the frame position of a named part. Used by glance and pov. */
+const PHONE_H = 1100;
+function phoneFx(root, s, PX, PY, PS) {
+  const rig = $('div', 'rig gl-rig', root); rig.style.cssText = `left:${PX}px;top:${PY}px;transform:scale(${PS});transform-origin:0 0`;
+  const phone = $('div', 'phone', rig); $('div', 'island', phone);
+  const glass = $('div', 'glass', phone), scr = $('div', 'screen gl-screen', glass);
+  const bar = $('div', 'gl-bar', scr), back = $('b', '', bar, '‹'), url = $('span', '', bar, s.url || 'yourbusiness.com');
+  SCR[(s.screen && s.screen.kind) || 'oldsite'](scr, s.screen || {}, s);
+  const inner = scr.querySelector('.inner');
+  if (s.screen && s.screen.zoom) inner.style.scale = s.screen.zoom;      // a desktop page on a phone: bigger than the screen, cut off at the right
+  const T = { back, nav: '.old-nav', hero: '.old-hero, .site-hero', cols: '.old-cols', foot: '.old-foot', link: '.old-link', headline: '.site-h', stars: '.site-meta', btn: '.site-btn' };
+  const sr = scr.getBoundingClientRect();
+  const local = name => { const el = typeof T[name] === 'string' ? scr.querySelector(T[name]) : T[name]; if (!el) return [320, 600];
+    const r = el.getBoundingClientRect(); return [(r.left + r.width / 2 - sr.left) / PS, (r.top + r.height / 2 - sr.top) / PS]; };
+  const at = name => { const [x, y] = local(name); return [sr.left + x * PS, sr.top + y * PS]; };
+  if (s.gaze) {
+    const ring = $('div', 'gl-gaze', scr), keys = s.gaze.map(([t, n]) => [s.at + t, local(n)]);
+    tick(t => {
+      let k = 0; while (k < keys.length - 1 && t >= keys[k + 1][0]) k++;
+      const [t0, p0] = keys[k], prev = keys[k - 1], u = prev ? smooth((t - t0) / 0.2) : 1, from = prev ? prev[1] : p0;
+      ring.style.left = lerp(from[0], p0[0], u) + 'px'; ring.style.top = lerp(from[1], p0[1], u) + 'px';
+      ring.style.display = t >= keys[0][0] - 1e-6 && (s.gaze_until == null || t < s.at + s.gaze_until) ? '' : 'none';
+    });
+    keys.slice(1).forEach(([t], i) => cue(t, 'tock', { i }));
+  }
+  (s.taps || []).forEach((q, i) => {
+    const [x, y] = local(q.on), tp = s.at + q.t, d = $('div', 'gl-tap', scr);
+    d.style.left = x + 'px'; d.style.top = y + 'px';
+    A(d, { opacity: [0, 1, 1, 0], scale: [1.7, 1, 1, 1.3], offset: [0, .45, .7, 1] }, { at: tp - 0.26, dur: 0.6, ease: EASE.lin });
+    cue(tp, 'tap', { i });
+    if (q.press) { const btn = scr.querySelector(T[q.on]); if (btn) { classAt(btn, 'done', tp + 0.02); A(btn, { scale: [1, .95, 1] }, { at: tp, dur: .26 }); cue(tp + 0.08, 'ding', { i: 2 }); } }
+  });
+  if (s.back_at != null) {                                // the page slides away to the right and the address bar empties
+    const tb = s.at + s.back_at;
+    A(inner, { translate: ['0px 0px', '700px 0px'], opacity: [1, 0] }, { at: tb, dur: .28, ease: EASE.in });
+    tick(t => { url.textContent = t >= tb + 0.2 ? '' : (s.url || 'yourbusiness.com'); });
+    cue(tb, 'swish');
+  }
+  if (s.timer) {                                         // {from, to, t0, t1} counts; {hold, flicker} stands still and blinks
+    const tm = $('div', 'gl-timer', root), q = s.timer, t0 = s.at + (q.t0 ?? 0), t1 = s.at + (q.t1 ?? s.dur), pre = s.rewind ? '◀◀ ' : '';
+    tick(t => {
+      const v = q.hold != null ? q.hold : lerp(q.from, q.to, clamp((t - t0) / Math.max(0.01, t1 - t0), 0, 1));
+      tm.textContent = pre + (Math.round(v * 100) / 100).toFixed(2) + ' s';
+      tm.style.opacity = q.flicker && Math.floor((t - s.at) / 0.3) % 2 ? 0.3 : 1;   // bright on the first frame (the cover)
+    });
+    if (q.hold == null) for (let k = 1; k <= 5; k++) cue(lerp(t0, t1, k / 5) - 0.01, 'tick', { i: k });
+  }
+  if (s.rewind) {
+    const v = $('div', 'gl-vhs', root);
+    tick(t => { v.style.transform = `translateY(${(Math.sin(t * 61) * 6).toFixed(1)}px)`; });
+    A(rig, { translate: ['0px 0px', '0px -5px', '0px 4px', '0px 0px'] }, { at: s.at, dur: 0.24, iter: Math.ceil(s.dur / 0.24) });
+    cue(s.at + 0.02, 'suck'); cue(s.at + 0.1, 'scroll', { dur: s.dur - 0.2 });
+  }
+  return { scr, at, w: 640 * PS, h: PHONE_H * PS };
+}
+/* glance: a figure on the left holds a phone; a dashed zoom callout leads to the same screen, large. */
+S.glance = s => {
+  const { root, st } = fgStage(s);
+  const svg = sv('svg', { viewBox: '0 0 960 720', width: 960, height: 720, class: 'cf-set gl-set' }, st);
+  sv('line', { x1: -1000, y1: FLOOR, x2: 2000, y2: FLOOR, stroke: LINE, 'stroke-width': 3 }, svg);
+  const callout = sv('g', {}, svg), layer = sv('g', {}, svg);
+  const cl = [0, 1].map(() => sv('line', { stroke: '#3a3a42', 'stroke-width': 3, 'stroke-dasharray': '8 8' }, callout));
+  const PX = s.px ?? 430, PY = s.py ?? 520, PS = s.ps ?? 0.6;
+  phoneFx(root, s, PX, PY, PS);
+  const acts = (s.cast || []).map(a => ({ a, h: actor(layer, a, s) })), holder = acts.find(x => x.a.phone);
+  const bx = PX - 60, byT = PY - 560 + 60, byB = PY - 560 + PHONE_H * PS - 60;
+  tick(t => {
+    if (!holder || s.callout === false) { cl.forEach(l => l.style.display = 'none'); return; }
+    const p = holder.h.poseAt(t), off = holder.a.phone_off_at != null && t >= s.at + holder.a.phone_off_at;
+    const w = 21 * p.sc, h = 37 * p.sc, x = p.hands[0][0] - w / 2 + p.d * 3 * p.sc + w, y = p.hands[0][1] - h * 0.72, show = p.op > 0.5 && !off && p.d > 0;
+    [[y, byT], [y + h, byB]].forEach(([y0, y1], i) => { const l = cl[i]; l.style.display = show ? '' : 'none';
+      l.setAttribute('x1', x.toFixed(1)); l.setAttribute('y1', y0.toFixed(1)); l.setAttribute('x2', bx); l.setAttribute('y2', y1); });
+  });
+};
+/* pov: through his eyes. The phone fills the middle of the frame, his two forearms come up from the
+   bottom edge to hold it, and his eyelids open and close over everything (`lids`: [[t, openness 0…1], …],
+   1 = wide open). The thumb (right forearm) reaches for each tap. `hands` is an INK name; `hands_to` and
+   `hands_at` change it, e.g. grey to lime the moment he books. */
+S.pov = s => {
+  const { root } = fgStage(s);
+  const PS = s.ps ?? (LAND ? 0.66 : 0.78), PW = 640 * PS, PH = PHONE_H * PS;
+  const PX = Math.round((FW - PW) / 2), PY = s.py ?? (LAND ? 290 : 540);
+  const ph = phoneFx(root, s, PX, PY, PS);
+  /* forearms, drawn over the phone's edges */
+  const hs = $('div', 'pov-hands', root);
+  const svg = sv('svg', { width: FW, height: FH, viewBox: `0 0 ${FW} ${FH}` }, hs);
+  const ink = INK[s.hands || 'visitor'], inkTo = s.hands_to ? INK[s.hands_to] : null, th = s.at + (s.hands_at ?? 0);
+  const sw = LAND ? 30 : 38, restY = PY + PH * 0.64;
+  const armL = sv('path', { fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': sw }, svg);
+  const armR = sv('path', { fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': sw }, svg);
+  const baseL = [PX - (LAND ? 260 : 170), FH + 60], baseR = [PX + PW + (LAND ? 260 : 170), FH + 60];
+  const restL = [PX + 6, restY], restR = [PX + PW - 6, restY];
+  const reach = (s.taps || []).map(q => ({ t: s.at + q.t, to: ph.at(q.on) }));
+  tick(t => {
+    let hand = restR;
+    reach.forEach(r => { const u = t < r.t ? smooth((t - (r.t - 0.24)) / 0.24) : 1 - smooth((t - (r.t + 0.12)) / 0.26); if (u > 0) hand = [lerp(restR[0], r.to[0] + 26, u), lerp(restR[1], r.to[1] + 30, u)]; });
+    const elbow = (b, h, out) => [lerp(b[0], h[0], 0.55) + out, lerp(b[1], h[1], 0.55) + 30];
+    const eL = elbow(baseL, restL, -40), eR = elbow(baseR, hand, 40);
+    armL.setAttribute('d', `M${baseL[0]} ${baseL[1]}Q${eL[0]} ${eL[1]} ${restL[0]} ${restL[1]}`);
+    armR.setAttribute('d', `M${baseR[0]} ${baseR[1]}Q${eR[0]} ${eR[1]} ${hand[0].toFixed(1)} ${hand[1].toFixed(1)}`);
+    const k = inkTo && t >= th ? inkTo : ink; armL.setAttribute('stroke', k[1]); armR.setAttribute('stroke', k[0]);
+  });
+  if (inkTo) { cue(th, 'pop', { i: 4 }); ANIM(hs, { opacity: [1, 0.4, 1] }, { at: th - 0.02, dur: 0.18, ease: EASE.lin }); }
+  /* inside the head: a dark vignette, and the eyelids */
+  $('div', 'pov-vig', root);
+  const top = $('div', 'pov-lid top', root), bot = $('div', 'pov-lid bot', root), keys = (s.lids || [[0, 1]]).map(([t, o]) => [s.at + t, o]);
+  tick(t => {
+    let o = keys[0][1];
+    for (let k = 0; k < keys.length; k++) { const [kt, ko] = keys[k], nx = keys[k + 1]; if (t >= kt) o = nx && t < nx[0] ? lerp(ko, nx[1], smooth((t - kt) / (nx[0] - kt))) : ko; }
+    top.style.transform = `translateY(${(-o * 104).toFixed(2)}%)`; bot.style.transform = `translateY(${(o * 104).toFixed(2)}%)`;
+  });
+  keys.forEach(([t, o], i) => { if (i && o < 0.2 && keys[i - 1][1] > 0.5) cue(t - 0.05, 'suck', { i }); });
+};
+/* behind: the street, seen from behind the visitor. He stands big in the foreground with his back to us,
+   facing his own cafe and looking at his phone (a glow around his head). `cam`: [[t, zoom], …] pushes the
+   camera into his head (zoom ≈ 36 fills the frame with it) or pulls it out again; `black`: [[t, opacity], …]
+   fades to or from black; `walk` takes him into the door, `enter_at` through it. */
+function backFig(G, f, s) {
+  const ink = INK[f.ink || 'visitor'], inkTo = f.ink_to ? INK[f.ink_to] : null;
+  const defs = sv('defs', {}, G), gid = 'pglow' + s.i, rg = sv('radialGradient', { id: gid }, defs);
+  sv('stop', { offset: '0', 'stop-color': '#e9ecff', 'stop-opacity': '.55' }, rg); sv('stop', { offset: '1', 'stop-color': '#e9ecff', 'stop-opacity': '0' }, rg);
+  const g = sv('g', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', fill: 'none' }, G);
+  const glow = sv('ellipse', { fill: `url(#${gid})` }, g);
+  const fore = [0, 1].map(() => sv('path', {}, g)), legs = [0, 1].map(() => sv('path', {}, g));
+  const torso = sv('path', {}, g), upper = [0, 1].map(() => sv('path', {}, g)), head = sv('circle', {}, g);
+  const W0 = f.walk, tw0 = W0 ? s.at + W0.at : Infinity, tw1 = W0 ? tw0 + W0.dur : Infinity, te = f.enter_at != null ? s.at + f.enter_at : Infinity;
+  if (W0) for (let t = tw0; t < tw1 - 0.05; t += (W0.cycle ?? 0.5) / 2) cue(t, 'foot');
+  if (te < Infinity) cue(te + 0.02, 'doorbell');
+  const pos = t => {
+    if (!W0 || t < tw0) return { x: f.x, g: f.g, sc: f.sc, u: 0 };
+    const u = clamp((t - tw0) / W0.dur, 0, 1), e = u;                    // steady pace into the door
+    return { x: lerp(f.x, W0.to[0], e), g: lerp(f.g, W0.to[1], e), sc: lerp(f.sc, W0.sc_to ?? f.sc, e), u };
+  };
+  const draw = t => {
+    const p = pos(t), sc = p.sc, walking = W0 && t >= tw0, cyc = W0 ? (W0.cycle ?? 0.5) : 1, ph = walking ? (t - tw0) / cyc : 0;
+    const lift = walking ? 16 * sc : 0, lL = Math.max(0, Math.sin(2 * Math.PI * ph)) * lift, lR = Math.max(0, -Math.sin(2 * Math.PI * ph)) * lift;
+    const br = Math.sin(t * 2.3) * 1.2 * sc, hx = p.x, hy = p.g - 82 * sc + (walking ? -Math.abs(Math.cos(2 * Math.PI * ph)) * 3 * sc : br * 0.3);
+    const sy = hy - 58 * sc + br, ty = hy - 80 * sc, cy = hy - 103 * sc, r = 21 * sc;
+    const holding = !walking || (t - tw0) < 0.12;
+    const k = inkTo && t >= s.at + (f.ink_at ?? 0) ? inkTo : ink;
+    const S = (el, d, c, w) => { el.setAttribute('d', d); el.setAttribute('stroke', c); el.setAttribute('stroke-width', (w * sc).toFixed(2)); };
+    [[-1, lL], [1, lR]].forEach(([side, lf], i) => {                // legs: the stepping foot rises and lands a little further in
+      const fx = hx + side * 12 * sc, fy = p.g - lf, kx = hx + side * 9 * sc, ky = (hy + fy) / 2 - lf * 0.3;
+      S(legs[i], `M${hx} ${hy}L${kx} ${ky}L${fx} ${fy}`, k[0], 10.5);
+    });
+    [-1, 1].forEach((side, i) => {
+      if (holding) {                                       // elbows out, forearms forward to the phone in front of him (hidden by the body)
+        const ex = hx + side * 25 * sc, ey = sy + 26 * sc;
+        S(upper[i], `M${hx} ${sy}L${ex} ${ey}`, k[0], 10.5); S(fore[i], `M${ex} ${ey}L${hx + side * 8 * sc} ${sy + 8 * sc}`, k[1], 10.5);
+      } else {                                             // walking: arms down, swinging
+        const sw = Math.sin(2 * Math.PI * ph) * side * 6 * sc, ex = hx + side * 15 * sc, ey = sy + 25 * sc;
+        S(upper[i], `M${hx} ${sy}L${ex} ${ey}`, k[0], 10.5); S(fore[i], `M${ex} ${ey}L${hx + side * 18 * sc + sw} ${sy + 50 * sc}`, k[0], 10.5);
+      }
+    });
+    S(torso, `M${hx} ${hy}L${hx} ${ty + r * 0.2}`, k[0], 10.5);
+    head.setAttribute('cx', hx); head.setAttribute('cy', cy.toFixed(1)); head.setAttribute('r', r.toFixed(1)); head.setAttribute('fill', k[0]);
+    glow.setAttribute('cx', hx); glow.setAttribute('cy', (cy + 14 * sc).toFixed(1)); glow.setAttribute('rx', (46 * sc).toFixed(1)); glow.setAttribute('ry', (36 * sc).toFixed(1));
+    glow.style.display = holding && !(f.glow === false) ? '' : 'none';
+    g.setAttribute('opacity', t < te ? 1 : (1 - easeOut((t - te) / 0.3)).toFixed(3));
+    return { x: hx, y: cy };
+  };
+  let last = { x: f.x, y: f.g - 103 * f.sc };
+  tick(t => { if (t >= s.at - 1e-6 && t < s.at + s.dur) last = draw(t); });
+  return { headAt: t => { const p = pos(t); return { x: p.x, y: p.g - (82 + 103) * p.sc }; } };   // hip height + head above hip
+}
+S.behind = s => {
+  const { root, st } = fgStage(s);
+  const svg = sv('svg', { viewBox: '0 0 960 720', width: 960, height: 720, class: 'cf-set gl-set' }, st);
+  const cam = sv('g', {}, svg), back = sv('g', {}, cam), mid = sv('g', {}, cam), front = sv('g', {}, cam);
+  drawFacade(back, s);
+  if (s.passers) passers({ back: mid, mid, front: mid }, s, s.passers);
+  (s.cast || []).forEach(a => actor(mid, a, s));
+  const fig = backFig(front, s.figure, s);
+  /* camera: zoom about his head; as the zoom grows the head is also brought to the centre of the frame */
+  const ck = (s.cam || [[0, 1]]).map(([t, z]) => [s.at + t, z]), C = [FW / 2 - (LAND ? 480 : 60), FH / 2 - (LAND ? 300 : 560)];
+  tick(t => {
+    let z = ck[0][1];
+    for (let k = 0; k < ck.length; k++) { const [kt, kz] = ck[k], nx = ck[k + 1]; if (t >= kt) z = nx && t < nx[0] ? Math.exp(lerp(Math.log(kz), Math.log(nx[1]), smooth((t - kt) / (nx[0] - kt)))) : kz; }
+    const h = fig.headAt(t), w = clamp((z - 1) / 3, 0, 1), qx = lerp(h.x, C[0], w), qy = lerp(h.y, C[1], w);
+    cam.setAttribute('transform', `translate(${(qx - z * h.x).toFixed(2)} ${(qy - z * h.y).toFixed(2)}) scale(${z.toFixed(4)})`);
+  });
+  ck.forEach(([t, z], i) => { const nx = ck[i + 1]; if (nx && nx[1] > z * 4) cue(t + 0.05, 'whoosh', { i }); if (nx && z > nx[1] * 4) cue(t, 'whoosh', { i }); });
+  const head = root.querySelector('.fg-head');
+  if (head && s.head_out_at != null) A(head, { opacity: [1, 0] }, { at: s.at + s.head_out_at, dur: 0.2, ease: EASE.lin });
+  if (head && s.head_in_at != null) A(head, { opacity: [0, 1] }, { at: s.at + s.head_in_at, dur: 0.2, ease: EASE.lin });
+  if (s.black) {
+    const bl = $('div', 'pov-black', root), bk = s.black.map(([t, o]) => [s.at + t, o]);
+    tick(t => { let o = bk[0][1]; for (let k = 0; k < bk.length; k++) { const [kt, ko] = bk[k], nx = bk[k + 1]; if (t >= kt) o = nx && t < nx[0] ? lerp(ko, nx[1], (t - kt) / (nx[0] - kt)) : ko; } bl.style.opacity = o.toFixed(3); });
+  }
 };
 /* map: the neighbourhood. Every other place is on it; his is the one pin that is not lit.
    `light_at` turns his pin on. */
@@ -1174,7 +1402,7 @@ S.map = s => {
 for (let i = 0; i < scenes.length; i++) {
   const s = scenes[i];
   if (s.type === 'phone') { const run = [s]; while (scenes[i + 1] && scenes[i + 1].type === 'phone' && !scenes[i + 1].new_phone) run.push(scenes[++i]); phoneRun(run); }
-  else if (S[s.type]) { S[s.type](s); if (s.at > 0 && !['flash', 'offer', 'end', 'bignum', 'slam', 'chaos', 'statement', 'blurtype', 'cut', 'button', 'merge', 'count', 'dial', 'listings', 'receipt', 'landing', 'cafe_in', 'cafe_out', 'map'].includes(s.type)) cue(s.at, 'swish'); }
+  else if (S[s.type]) { S[s.type](s); if (s.at > 0 && !['flash', 'offer', 'end', 'bignum', 'slam', 'chaos', 'statement', 'blurtype', 'cut', 'button', 'merge', 'count', 'dial', 'listings', 'receipt', 'landing', 'cafe_in', 'cafe_out', 'map', 'glance', 'pov', 'behind'].includes(s.type)) cue(s.at, 'swish'); }
   else console.error('unknown scene type', s.type);
 }
 /* The technical HUD is opt-in ("hud": true). Its counters change on every frame in all four corners,

@@ -7,6 +7,11 @@ HERE = Path(__file__).resolve().parent
 W, H, FPS = 1080, 1920, 30
 
 
+def dims(spec):
+    """Frame size: vertical 1080x1920 by default, 1920x1080 for "format": "landscape"."""
+    return (1920, 1080) if spec.get("format") == "landscape" else (W, H)
+
+
 def _launch(p):
     try:
         return p.chromium.launch()
@@ -20,7 +25,8 @@ def _launch(p):
 
 def _open(p, spec):
     b = _launch(p)
-    pg = b.new_page(viewport={"width": W, "height": H}, device_scale_factor=1)
+    fw, fh = dims(spec)
+    pg = b.new_page(viewport={"width": fw, "height": fh}, device_scale_factor=1)
     errs = []
     pg.on("pageerror", lambda e: errs.append(str(e)))
     pg.on("console", lambda m: errs.append(m.text) if m.type == "error" else None)
@@ -84,7 +90,8 @@ def sheet(spec, times, path, cols=6, w=270):
     from playwright.sync_api import sync_playwright
     from PIL import Image
     import io
-    h = int(w * H / W)
+    fw, fh = dims(spec)
+    h = int(w * fh / fw)
     rows = (len(times) + cols - 1) // cols
     im = Image.new("RGB", (cols * w, rows * h))
     with sync_playwright() as p:
