@@ -409,3 +409,5 @@ html.land,html.land body,html.land #stage{width:1920px;height:1080px}
 .pov-lid.bot{bottom:0;border-radius:50% 50% 0 0 / 26% 26% 0 0}
 .pov-black{position:absolute;inset:0;background:#000;z-index:14;pointer-events:none}
 .fg-head,.gl-timer{z-index:20}
+.pov-eyes{position:absolute;inset:0;z-index:14;pointer-events:none}
+.pov-bg{position:absolute;inset:0;background:#1b1b21;filter:blur(7px) brightness(2.1);opacity:.95}

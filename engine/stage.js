@@ -1255,8 +1255,12 @@ S.glance = s => {
    `hands_at` change it, e.g. grey to lime the moment he books. */
 S.pov = s => {
   const { root } = fgStage(s);
-  const PS = s.ps ?? (LAND ? 0.66 : 0.78), PW = 640 * PS, PH = PHONE_H * PS;
-  const PX = Math.round((FW - PW) / 2), PY = s.py ?? (LAND ? 290 : 540);
+  const PS = s.ps ?? (LAND ? 0.58 : 0.55), PW = 640 * PS, PH = PHONE_H * PS;   // sized to sit inside the two eyes
+  const PX = Math.round((FW - PW) / 2), PY = s.py ?? (LAND ? 320 : 650);
+  /* what is behind the phone: the cafe he is standing in front of, out of focus. It also makes the two
+     eye openings visible, since inside them is not as dark as outside. */
+  const bg = $('div', 'pov-bg', root), bsv = sv('svg', { width: FW, height: FH, viewBox: LAND ? '-70 53 1100 619' : '275 -251 560 996', preserveAspectRatio: 'xMidYMid slice' }, bg);
+  drawFacade(sv('g', {}, bsv), s);
   const ph = phoneFx(root, s, PX, PY, PS);
   /* forearms, drawn over the phone's edges */
   const hs = $('div', 'pov-hands', root);
@@ -1278,13 +1282,22 @@ S.pov = s => {
     const k = inkTo && t >= th ? inkTo : ink; armL.setAttribute('stroke', k[1]); armR.setAttribute('stroke', k[0]);
   });
   if (inkTo) { cue(th, 'pop', { i: 4 }); ANIM(hs, { opacity: [1, 0.4, 1] }, { at: th - 0.02, dur: 0.18, ease: EASE.lin }); }
-  /* inside the head: a dark vignette, and the eyelids */
-  $('div', 'pov-vig', root);
-  const top = $('div', 'pov-lid top', root), bot = $('div', 'pov-lid bot', root), keys = (s.lids || [[0, 1]]).map(([t, o]) => [s.at + t, o]);
+  /* through his eyes: everything outside two round openings is black. Blinking squeezes both openings
+     to a line (`lids`: [[t, openness 0…1], …], 1 = wide open). */
+  const R = LAND ? 380 : 300, EX = LAND ? 300 : 222, EY = LAND ? 640 : 950;   // both eyes whole inside the frame
+  const mk = $('div', 'pov-eyes', root), msv = sv('svg', { width: FW, height: FH, viewBox: `0 0 ${FW} ${FH}` }, mk);
+  const mid = 'eyes' + s.i, defs = sv('defs', {}, msv), mask = sv('mask', { id: mid }, defs);
+  const blur = sv('filter', { id: mid + 'b', x: '-20%', y: '-20%', width: '140%', height: '140%' }, defs);
+  sv('feGaussianBlur', { stdDeviation: LAND ? 12 : 14 }, blur);                    // a soft edge, and one outline for both eyes together
+  sv('rect', { x: 0, y: 0, width: FW, height: FH, fill: '#fff' }, mask);
+  const holes = [-1, 1].map(k => sv('ellipse', { cx: FW / 2 + k * EX, cy: EY, rx: R, ry: R, fill: '#000', filter: `url(#${mid}b)` }, mask));
+  sv('rect', { x: 0, y: 0, width: FW, height: FH, fill: '#000', mask: `url(#${mid})` }, msv);
+  const keys = (s.lids || [[0, 1]]).map(([t, o]) => [s.at + t, o]);
   tick(t => {
     let o = keys[0][1];
     for (let k = 0; k < keys.length; k++) { const [kt, ko] = keys[k], nx = keys[k + 1]; if (t >= kt) o = nx && t < nx[0] ? lerp(ko, nx[1], smooth((t - kt) / (nx[0] - kt))) : ko; }
-    top.style.transform = `translateY(${(-o * 104).toFixed(2)}%)`; bot.style.transform = `translateY(${(o * 104).toFixed(2)}%)`;
+    const ry = Math.max(0.01, R * o).toFixed(1);
+    holes.forEach(h => { h.setAttribute('ry', ry); h.style.display = o > 0.02 ? '' : 'none'; });
   });
   keys.forEach(([t, o], i) => { if (i && o < 0.2 && keys[i - 1][1] > 0.5) cue(t - 0.05, 'suck', { i }); });
 };
