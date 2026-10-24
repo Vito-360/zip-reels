@@ -1067,6 +1067,7 @@ function fgStage(s) {
     if (s.at > 0 && !s.hold_head) A(el, { scale: [1.04, 1] }, { at: s.at, dur: .2 });
   }
   if (!s.hold_head) cue(s.at, s.at === 0 ? 'hit' : (s.lines || []).length ? 'slam' : 'swish');   // no headline, no slam
+  (s.sfx || []).forEach(([t, k], i) => cue(s.at + t, k, { i }));     // extra cues: [[t, kind], …]
   const st = $('div', 'fg-stage', root);
   return { root, st };
 }
@@ -1210,6 +1211,10 @@ function phoneFx(root, s, PX, PY, PS) {
   if (s.back_at != null) {                                // the page slides away to the right and the address bar empties
     const tb = s.at + s.back_at;
     A(inner, { translate: ['0px 0px', '700px 0px'], opacity: [1, 0] }, { at: tb, dur: .28, ease: EASE.in });
+    const res = $('div', 'gl-results', scr);                           // back on the results page: every other place, one tap away
+    for (let k = 0; k < 4; k++) { const c = $('div', 'gl-res', res); $('i', '', c); $('u', '', c); $('u', 's', c); }
+    showBetween(res, tb + 0.12); A(res, { translate: ['-80px 0px', '0px 0px'], opacity: [0, 1] }, { at: tb + 0.12, dur: .26 });
+    [...res.children].forEach((c, k) => A(c, { opacity: [0, 1], translate: ['0 20px', '0 0'] }, { at: tb + 0.2 + k * 0.07, dur: .2 }));
     tick(t => { url.textContent = t >= tb + 0.2 ? '' : (s.url || 'yourbusiness.com'); });
     cue(tb, 'swish');
   }
@@ -1335,8 +1340,8 @@ function backFig(G, f, s) {
     });
     [-1, 1].forEach((side, i) => {
       if (holding) {                                       // elbows out, forearms forward to the phone in front of him (hidden by the body)
-        const ex = hx + side * 25 * sc, ey = sy + 26 * sc;
-        S(upper[i], `M${hx} ${sy}L${ex} ${ey}`, k[0], 10.5); S(fore[i], `M${ex} ${ey}L${hx + side * 8 * sc} ${sy + 8 * sc}`, k[1], 10.5);
+        const ex = hx + side * 25 * sc, ey = sy + 26 * sc, scroll = side > 0 ? Math.max(0, Math.sin(t * 7.5)) * 4 * sc : 0;   // his thumb keeps scrolling
+        S(upper[i], `M${hx} ${sy}L${ex} ${ey + scroll * 0.4}`, k[0], 10.5); S(fore[i], `M${ex} ${ey + scroll * 0.4}L${hx + side * 8 * sc} ${sy + 8 * sc - scroll}`, k[1], 10.5);
       } else {                                             // walking: arms down, swinging
         const sw = Math.sin(2 * Math.PI * ph) * side * 6 * sc, ex = hx + side * 15 * sc, ey = sy + 25 * sc;
         S(upper[i], `M${hx} ${sy}L${ex} ${ey}`, k[0], 10.5); S(fore[i], `M${ex} ${ey}L${hx + side * 18 * sc + sw} ${sy + 50 * sc}`, k[0], 10.5);
@@ -1345,7 +1350,7 @@ function backFig(G, f, s) {
     S(torso, `M${hx} ${hy}L${hx} ${ty + r * 0.2}`, k[0], 10.5);
     head.setAttribute('cx', hx); head.setAttribute('cy', cy.toFixed(1)); head.setAttribute('r', r.toFixed(1)); head.setAttribute('fill', k[0]);
     glow.setAttribute('cx', hx); glow.setAttribute('cy', (cy + 14 * sc).toFixed(1)); glow.setAttribute('rx', (46 * sc).toFixed(1)); glow.setAttribute('ry', (36 * sc).toFixed(1));
-    glow.style.display = holding && !(f.glow === false) ? '' : 'none';
+    glow.style.display = holding && !(f.glow === false) ? '' : 'none'; glow.setAttribute('opacity', (0.82 + Math.sin(t * 7.5) * 0.12).toFixed(3));
     g.setAttribute('opacity', t < te ? 1 : (1 - easeOut((t - te) / 0.3)).toFixed(3));
     return { x: hx, y: cy };
   };
